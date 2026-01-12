@@ -134,6 +134,7 @@
             max-width: 90%;
             max-height: 80%;
             overflow-y: auto;
+            min-width: 300px;
         }
         .modal-title {
             font-size: 18px;
@@ -161,6 +162,39 @@
             color: #fff;
             cursor: pointer;
             font-size: 16px;
+        }
+        .use-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            background: #27ae60;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .equip-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            background: #3498db;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .drop-btn {
+            margin-top: 5px;
+            width: 100%;
+            padding: 8px;
+            background: #c0392b;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
         }
         /* Colors */
         .c-normal { color: #fff; }
@@ -214,6 +248,15 @@
         }
         .equip-slot:hover { background: #2a2a3e; }
         .negative { color: #e74c3c; }
+        /* Status screen */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        .stat-label { color: #888; }
+        .stat-value { font-weight: bold; }
         @media (max-width: 600px) {
             #map { font-size: 10px; letter-spacing: 1px; }
             #side-panel { width: 100%; }
@@ -260,7 +303,8 @@
                     <button class="ctrl-btn" data-dir="right">D</button>
                 </div>
                 <div class="action-btns">
-                    <button class="action-btn" id="btn-inventory">Inventory</button>
+                    <button class="action-btn" id="btn-inventory">Bag</button>
+                    <button class="action-btn" id="btn-status">Status</button>
                     <button class="action-btn" id="btn-stairs">Stairs</button>
                     <button class="action-btn" id="btn-save">Save</button>
                 </div>
@@ -275,6 +319,15 @@
             <ul class="item-list" id="inventory-list"></ul>
             <div id="item-detail" class="equip-detail" style="display:none;"></div>
             <button class="close-btn" id="close-inventory">Close</button>
+        </div>
+    </div>
+
+    <!-- Status Modal -->
+    <div class="modal" id="status-modal">
+        <div class="modal-content">
+            <div class="modal-title">CHARACTER STATUS</div>
+            <div id="status-content"></div>
+            <button class="close-btn" id="close-status">Close</button>
         </div>
     </div>
 
@@ -392,6 +445,7 @@ const ENEMIES = [
 
 // ==================== GAME STATE ====================
 let game = null;
+let selectedItemIdx = -1;
 
 class Game {
     constructor() {
@@ -1074,48 +1128,59 @@ function renderInventory() {
     let html = '';
     game.player.inventory.forEach((item, idx) => {
         if (item.type === 'potion') {
-            html += `<li class="item-row" data-idx="${idx}"><span class="c-legend">Potion</span> HP+${item.heal}</li>`;
+            html += `<li class="item-row" data-idx="${idx}" data-type="potion"><span class="c-legend">Potion</span> HP+${item.heal}</li>`;
         } else {
             const eq = item.equip;
             const canEquip = game.player.canEquip(eq);
-            html += `<li class="item-row" data-idx="${idx}"><span class="${RARITY[eq.rarity].cls}">${eq.name}</span>${canEquip?'':' <span class="c-red">!</span>'}</li>`;
+            html += `<li class="item-row" data-idx="${idx}" data-type="equip"><span class="${RARITY[eq.rarity].cls}">${eq.name}</span>${canEquip?'':' <span class="c-red">!</span>'}</li>`;
         }
     });
     list.innerHTML = html || '<li class="c-gray">Empty</li>';
     document.getElementById('item-detail').style.display = 'none';
+    selectedItemIdx = -1;
 }
 
 function showItemDetail(idx) {
     const item = game.player.inventory[idx];
     const detail = document.getElementById('item-detail');
+    selectedItemIdx = idx;
+
     if (item.type === 'potion') {
-        detail.innerHTML = `<div class="c-legend">Potion</div><div>Heal: +${item.heal} HP</div>
-            <button class="action-btn" style="margin-top:10px;width:100%" onclick="useItem(${idx})">Use</button>`;
+        detail.innerHTML = `
+            <div class="c-legend" style="font-size:16px;">Potion</div>
+            <div style="margin:10px 0;">Heal: <span class="c-green">+${item.heal} HP</span></div>
+            <button class="use-btn" id="btn-use-potion">Use Potion</button>
+            <button class="drop-btn" id="btn-drop-item">Drop</button>
+        `;
+        document.getElementById('btn-use-potion').onclick = () => usePotion(idx);
+        document.getElementById('btn-drop-item').onclick = () => dropItem(idx);
     } else {
         const eq = item.equip;
         const stats = eq.getTotalStats();
         const canEquip = game.player.canEquip(eq);
-        let html = `<div class="${RARITY[eq.rarity].cls}">${eq.name}</div>`;
+        let html = `<div class="${RARITY[eq.rarity].cls}" style="font-size:16px;">${eq.name}</div>`;
         html += `<div class="c-gray">${EQUIP_TYPES[eq.type].name} | ${RARITY[eq.rarity].name}</div>`;
         if (eq.reqStr || eq.reqDex || eq.reqInt) {
-            html += `<div>Req: `;
+            html += `<div style="margin:5px 0;">Req: `;
             if (eq.reqStr) html += `<span class="${game.player.getStats().str >= eq.reqStr ? 'c-green' : 'c-red'}">STR:${eq.reqStr}</span> `;
             if (eq.reqDex) html += `<span class="${game.player.getStats().dex >= eq.reqDex ? 'c-green' : 'c-red'}">DEX:${eq.reqDex}</span> `;
             if (eq.reqInt) html += `<span class="${game.player.getStats().int >= eq.reqInt ? 'c-green' : 'c-red'}">INT:${eq.reqInt}</span>`;
             html += `</div>`;
         }
-        html += `<div class="c-gray">--- Stats ---</div>`;
+        html += `<div class="c-gray" style="margin-top:10px;">--- Stats ---</div>`;
         for (const k in stats) {
             if (stats[k] !== 0) {
                 const isNeg = stats[k] < 0;
                 html += `<div class="${isNeg?'negative':''}">${formatStat(k)}: ${stats[k]>0?'+':''}${stats[k]}</div>`;
             }
         }
-        if (eq.setName) html += `<div class="c-set">Set: ${eq.setName}</div>`;
-        html += `<button class="action-btn" style="margin-top:10px;width:100%" onclick="equipItem(${idx})" ${canEquip?'':'disabled'}>Equip</button>`;
-        html += `<button class="action-btn" style="margin-top:5px;width:100%;background:#c0392b" onclick="dropItem(${idx})">Drop</button>`;
+        if (eq.setName) html += `<div class="c-set" style="margin-top:5px;">Set: ${eq.setName}</div>`;
+        html += `<button class="equip-btn" id="btn-equip-item" ${canEquip?'':'disabled'}>Equip</button>`;
+        html += `<button class="drop-btn" id="btn-drop-item">Drop</button>`;
+        detail.innerHTML = html;
+        document.getElementById('btn-equip-item').onclick = () => equipItem(idx);
+        document.getElementById('btn-drop-item').onclick = () => dropItem(idx);
     }
-    detail.innerHTML = html;
     detail.style.display = 'block';
 }
 
@@ -1127,15 +1192,15 @@ function formatStat(k) {
     return names[k] || k;
 }
 
-function useItem(idx) {
+function usePotion(idx) {
     const item = game.player.inventory[idx];
-    if (item.type === 'potion') {
+    if (item && item.type === 'potion') {
         const stats = game.player.getStats();
         const heal = Math.min(item.heal, stats.maxHp - game.player.hp);
         game.player.hp += heal;
         game.player.inventory.splice(idx, 1);
         game.msg(`HP +${heal}`, 'c-green');
-        renderInventory();
+        document.getElementById('inventory-modal').classList.remove('active');
         render();
     }
 }
@@ -1150,7 +1215,6 @@ function equipItem(idx) {
     if (type.slots.length === 1) {
         doEquip(idx, type.slots[0]);
     } else {
-        // Show slot selection
         showSlotSelect(idx, type.slots);
     }
 }
@@ -1230,6 +1294,40 @@ function unequipSlot(slot) {
     render();
 }
 
+function renderStatus() {
+    const p = game.player;
+    const s = p.getStats();
+
+    let html = `
+        <div class="stat-row"><span class="stat-label">Level</span><span class="stat-value">${p.level}</span></div>
+        <div class="stat-row"><span class="stat-label">EXP</span><span class="stat-value">${p.exp} / ${p.expNext}</span></div>
+        <div class="stat-row"><span class="stat-label">HP</span><span class="stat-value c-red">${p.hp} / ${s.maxHp}</span></div>
+        <div class="stat-row"><span class="stat-label">Gold</span><span class="stat-value c-rare">${p.gold}</span></div>
+        <div style="margin:15px 0;color:#f1c40f;">--- Attributes ---</div>
+        <div class="stat-row"><span class="stat-label">STR</span><span class="stat-value c-red">${s.str}</span></div>
+        <div class="stat-row"><span class="stat-label">DEX</span><span class="stat-value c-green">${s.dex}</span></div>
+        <div class="stat-row"><span class="stat-label">INT</span><span class="stat-value c-magic">${s.int}</span></div>
+        <div style="margin:15px 0;color:#f1c40f;">--- Combat ---</div>
+        <div class="stat-row"><span class="stat-label">Damage</span><span class="stat-value">${s.dmgMin} - ${s.dmgMax}</span></div>
+        <div class="stat-row"><span class="stat-label">Armor</span><span class="stat-value">${s.armor}</span></div>
+        <div class="stat-row"><span class="stat-label">Evasion</span><span class="stat-value">${s.eva}%</span></div>
+        <div class="stat-row"><span class="stat-label">Block</span><span class="stat-value">${s.block}%</span></div>
+        <div class="stat-row"><span class="stat-label">Crit Chance</span><span class="stat-value">${s.crit}%</span></div>
+        <div class="stat-row"><span class="stat-label">Crit Damage</span><span class="stat-value">${s.critDmg}%</span></div>
+        <div style="margin:15px 0;color:#f1c40f;">--- Elemental ---</div>
+        <div class="stat-row"><span class="stat-label">Fire Dmg</span><span class="stat-value c-red">${s.fireDmg}</span></div>
+        <div class="stat-row"><span class="stat-label">Cold Dmg</span><span class="stat-value c-cyan">${s.coldDmg}</span></div>
+        <div class="stat-row"><span class="stat-label">Ltng Dmg</span><span class="stat-value c-rare">${s.ltnDmg}</span></div>
+        <div class="stat-row"><span class="stat-label">Dark Dmg</span><span class="stat-value c-legend">${s.darkDmg}</span></div>
+        <div style="margin:15px 0;color:#f1c40f;">--- Resistances ---</div>
+        <div class="stat-row"><span class="stat-label">Fire Res</span><span class="stat-value c-red">${s.fireRes}%</span></div>
+        <div class="stat-row"><span class="stat-label">Cold Res</span><span class="stat-value c-cyan">${s.coldRes}%</span></div>
+        <div class="stat-row"><span class="stat-label">Ltng Res</span><span class="stat-value c-rare">${s.ltnRes}%</span></div>
+        <div class="stat-row"><span class="stat-label">Dark Res</span><span class="stat-value c-legend">${s.darkRes}%</span></div>
+    `;
+    document.getElementById('status-content').innerHTML = html;
+}
+
 // ==================== EVENT HANDLERS ====================
 document.addEventListener('DOMContentLoaded', () => {
     // Check for save
@@ -1282,6 +1380,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.key === 'i') {
             renderInventory();
             document.getElementById('inventory-modal').classList.add('active');
+        } else if (e.key === 'c') {
+            renderStatus();
+            document.getElementById('status-modal').classList.add('active');
         }
     });
 
@@ -1289,6 +1390,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-inventory').onclick = () => {
         renderInventory();
         document.getElementById('inventory-modal').classList.add('active');
+    };
+
+    document.getElementById('btn-status').onclick = () => {
+        renderStatus();
+        document.getElementById('status-modal').classList.add('active');
     };
 
     document.getElementById('btn-stairs').onclick = () => {
@@ -1306,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('inventory-list').onclick = e => {
         const row = e.target.closest('.item-row');
         if (row) {
-            document.querySelectorAll('.item-row').forEach(r => r.classList.remove('selected'));
+            document.querySelectorAll('#inventory-list .item-row').forEach(r => r.classList.remove('selected'));
             row.classList.add('selected');
             showItemDetail(parseInt(row.dataset.idx));
         }
@@ -1314,6 +1420,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('close-inventory').onclick = () => {
         document.getElementById('inventory-modal').classList.remove('active');
+    };
+
+    document.getElementById('close-status').onclick = () => {
+        document.getElementById('status-modal').classList.remove('active');
     };
 
     // Equipment slots
