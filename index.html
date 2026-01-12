@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dungeon Game</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            color: #eee;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+        }
+        #game-container {
+            max-width: 800px;
+            width: 100%;
+        }
+        #header {
+            background: #16213e;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .stat { font-size: 14px; }
+        .hp-bar {
+            width: 100px;
+            height: 12px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .hp-fill { height: 100%; background: #e74c3c; transition: width 0.3s; }
+        #main-area {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        #map-container {
+            background: #0f0f23;
+            border: 2px solid #4a4a6a;
+            border-radius: 8px;
+            padding: 5px;
+            flex: 1;
+            min-width: 300px;
+        }
+        #map {
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.2;
+            white-space: pre;
+            letter-spacing: 2px;
+        }
+        #side-panel {
+            width: 200px;
+            background: #16213e;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 12px;
+        }
+        #messages {
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            min-height: 60px;
+            font-size: 12px;
+        }
+        .msg { margin: 2px 0; }
+        #controls {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .ctrl-row { display: flex; gap: 5px; }
+        .ctrl-btn {
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            background: #4a4a6a;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .ctrl-btn:active { background: #6a6a8a; }
+        .action-btns {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .action-btn {
+            padding: 10px 15px;
+            background: #2d4a6a;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .action-btn:active { background: #4a6a8a; }
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #1a1a2e;
+            border: 2px solid #4a4a6a;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        .modal-title {
+            font-size: 18px;
+            color: #f1c40f;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .item-list { list-style: none; }
+        .item-row {
+            padding: 8px;
+            margin: 4px 0;
+            background: #2a2a4e;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .item-row:hover { background: #3a3a5e; }
+        .item-row.selected { border: 2px solid #f1c40f; }
+        .close-btn {
+            margin-top: 15px;
+            width: 100%;
+            padding: 10px;
+            background: #e74c3c;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        /* Colors */
+        .c-normal { color: #fff; }
+        .c-magic { color: #3498db; }
+        .c-rare { color: #f1c40f; }
+        .c-unique { color: #e67e22; }
+        .c-legend { color: #9b59b6; }
+        .c-set { color: #2ecc71; }
+        .c-red { color: #e74c3c; }
+        .c-green { color: #2ecc71; }
+        .c-cyan { color: #00bcd4; }
+        .c-gray { color: #888; }
+        /* Title screen */
+        #title-screen {
+            text-align: center;
+            padding: 40px;
+        }
+        #title-screen h1 {
+            font-size: 32px;
+            color: #f1c40f;
+            margin-bottom: 30px;
+        }
+        .title-btn {
+            display: block;
+            width: 200px;
+            margin: 10px auto;
+            padding: 15px;
+            font-size: 18px;
+            background: #2d4a6a;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+        }
+        .title-btn:hover { background: #4a6a8a; }
+        .title-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        /* Equipment detail */
+        .equip-detail {
+            background: #2a2a4e;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .equip-slot {
+            padding: 5px;
+            margin: 3px 0;
+            background: #1a1a2e;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .equip-slot:hover { background: #2a2a3e; }
+        .negative { color: #e74c3c; }
+        @media (max-width: 600px) {
+            #map { font-size: 10px; letter-spacing: 1px; }
+            #side-panel { width: 100%; }
+            .ctrl-btn { width: 60px; height: 60px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Title Screen -->
+        <div id="title-screen">
+            <h1>DUNGEON GAME</h1>
+            <p style="color:#888;margin-bottom:20px;">~ Diablo-like Dungeon RPG ~</p>
+            <button class="title-btn" id="btn-continue" disabled>Continue</button>
+            <button class="title-btn" id="btn-new">New Game</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" style="display:none;">
+            <div id="header">
+                <span class="stat">Lv.<span id="level">1</span></span>
+                <span class="stat">HP: <span class="hp-bar"><span class="hp-fill" id="hp-bar"></span></span> <span id="hp">50</span>/<span id="max-hp">50</span></span>
+                <span class="stat c-rare">G: <span id="gold">0</span></span>
+                <span class="stat c-cyan">B<span id="floor">1</span>F</span>
+            </div>
+            <div id="main-area">
+                <div id="map-container">
+                    <div id="map"></div>
+                </div>
+                <div id="side-panel">
+                    <div style="color:#f1c40f;margin-bottom:10px;">[ EQUIPMENT ]</div>
+                    <div id="equipment-list"></div>
+                    <div style="color:#888;margin-top:10px;font-size:10px;">Tap slot to change</div>
+                </div>
+            </div>
+            <div id="messages"></div>
+            <div id="controls">
+                <div class="ctrl-row">
+                    <button class="ctrl-btn" data-dir="up">W</button>
+                </div>
+                <div class="ctrl-row">
+                    <button class="ctrl-btn" data-dir="left">A</button>
+                    <button class="ctrl-btn" data-dir="down">S</button>
+                    <button class="ctrl-btn" data-dir="right">D</button>
+                </div>
+                <div class="action-btns">
+                    <button class="action-btn" id="btn-inventory">Inventory</button>
+                    <button class="action-btn" id="btn-stairs">Stairs</button>
+                    <button class="action-btn" id="btn-save">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Modal -->
+    <div class="modal" id="inventory-modal">
+        <div class="modal-content">
+            <div class="modal-title">INVENTORY (<span id="inv-count">0</span>/20)</div>
+            <ul class="item-list" id="inventory-list"></ul>
+            <div id="item-detail" class="equip-detail" style="display:none;"></div>
+            <button class="close-btn" id="close-inventory">Close</button>
+        </div>
+    </div>
+
+    <!-- Equipment Select Modal -->
+    <div class="modal" id="equip-modal">
+        <div class="modal-content">
+            <div class="modal-title" id="equip-modal-title">Select Equipment</div>
+            <ul class="item-list" id="equip-select-list"></ul>
+            <button class="close-btn" id="close-equip">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal" id="gameover-modal">
+        <div class="modal-content" style="text-align:center;">
+            <div class="modal-title" id="gameover-title">GAME OVER</div>
+            <p id="gameover-msg"></p>
+            <button class="close-btn" id="btn-restart">Return to Title</button>
+        </div>
+    </div>
+
+<script>
+// ==================== CONSTANTS ====================
+const MAP_WIDTH = 30;
+const MAP_HEIGHT = 15;
+const ROOM_MIN = 4, ROOM_MAX = 7, MAX_ROOMS = 5;
+
+const TILE = { WALL: '#', FLOOR: '.', STAIRS: '>', PLAYER: '@' };
+
+const RARITY = {
+    NORMAL: { name: 'Normal', cls: 'c-normal', affixes: 0 },
+    MAGIC: { name: 'Magic', cls: 'c-magic', affixes: 1 },
+    RARE: { name: 'Rare', cls: 'c-rare', affixes: 2 },
+    UNIQUE: { name: 'Unique', cls: 'c-unique', affixes: 0 },
+    LEGEND: { name: 'Legend', cls: 'c-legend', affixes: 3 },
+    SET: { name: 'Set', cls: 'c-set', affixes: 0 }
+};
+
+const TIER = {
+    CRUDE: { name: '粗末な', mult: 0.6, req: 0 },
+    COMMON: { name: '', mult: 1.0, req: 1.0 },
+    FINE: { name: '上質な', mult: 1.4, req: 1.3 },
+    MASTERWORK: { name: '精巧な', mult: 1.8, req: 1.6 },
+    SUPREME: { name: '至高の', mult: 2.3, req: 2.0 }
+};
+const TIER_FLOORS = { CRUDE: 1, COMMON: 3, FINE: 6, MASTERWORK: 9, SUPREME: 12 };
+
+const EQUIP_SLOTS = ['helmet','amulet','mainHand','offHand','body','ringL','ringR','belt','gloves','boots'];
+const SLOT_NAMES = {helmet:'Head',amulet:'Neck',mainHand:'R.Hand',offHand:'L.Hand',body:'Body',ringL:'L.Ring',ringR:'R.Ring',belt:'Belt',gloves:'Hands',boots:'Feet'};
+
+const EQUIP_TYPES = {
+    sword: { name: 'Sword', slots: ['mainHand','offHand'], bases: [{name:'Short Sword',dmgMin:4,dmgMax:10,reqStr:8},{name:'Long Sword',dmgMin:6,dmgMax:14,reqStr:12}] },
+    dagger: { name: 'Dagger', slots: ['mainHand','offHand'], bases: [{name:'Dagger',dmgMin:2,dmgMax:7,reqDex:6,crit:8}] },
+    bow: { name: 'Bow', slots: ['mainHand'], twoHand: true, bases: [{name:'Short Bow',dmgMin:4,dmgMax:12,reqDex:8},{name:'Long Bow',dmgMin:6,dmgMax:16,reqDex:14}] },
+    staff: { name: 'Staff', slots: ['mainHand'], twoHand: true, bases: [{name:'Staff',dmgMin:5,dmgMax:14,reqInt:10,ltnDmg:4}] },
+    shield: { name: 'Shield', slots: ['offHand'], bases: [{name:'Buckler',armor:10,block:15,reqStr:6},{name:'Kite Shield',armor:20,block:22,reqStr:12}] },
+    helmet: { name: 'Helmet', slots: ['helmet'], bases: [{name:'Leather Cap',armor:5,eva:6,reqDex:4},{name:'Plate Helm',armor:18,reqStr:12}] },
+    body: { name: 'Body Armor', slots: ['body'], bases: [{name:'Leather Armor',armor:12,eva:10,reqDex:6},{name:'Plate Armor',armor:40,reqStr:15}] },
+    gloves: { name: 'Gloves', slots: ['gloves'], bases: [{name:'Leather Gloves',armor:3,eva:4},{name:'Plate Gauntlets',armor:10,reqStr:8}] },
+    boots: { name: 'Boots', slots: ['boots'], bases: [{name:'Leather Boots',armor:3,eva:6},{name:'Plate Greaves',armor:10,reqStr:8}] },
+    belt: { name: 'Belt', slots: ['belt'], bases: [{name:'Leather Belt',armor:2,hp:8},{name:'Heavy Belt',armor:6,hp:18,reqStr:8}] },
+    amulet: { name: 'Amulet', slots: ['amulet'], bases: [{name:'Pendant',hp:10},{name:'Ruby Amulet',hp:5,str:6},{name:'Sapphire Amulet',hp:5,int:6}] },
+    ring: { name: 'Ring', slots: ['ringL','ringR'], bases: [{name:'Iron Ring',hp:6},{name:'Ruby Ring',str:4},{name:'Diamond Ring',crit:5}] }
+};
+
+const PREFIXES = [
+    {name:'Sharp ',stats:{dmgMin:2,dmgMax:4}},
+    {name:'Flaming ',stats:{fireDmg:5}},
+    {name:'Icy ',stats:{coldDmg:5}},
+    {name:'Sturdy ',stats:{armor:8}},
+    {name:'Vital ',stats:{hp:15}},
+    {name:'Strong ',stats:{str:5}},
+    {name:'Nimble ',stats:{dex:5}},
+    {name:'Wise ',stats:{int:5}}
+];
+const SUFFIXES = [
+    {name:' of Fire Res',stats:{fireRes:12}},
+    {name:' of Cold Res',stats:{coldRes:12}},
+    {name:' of Giants',stats:{str:8}},
+    {name:' of Wind',stats:{dex:8}},
+    {name:' of Precision',stats:{crit:5}},
+    {name:' of Evasion',stats:{eva:10}}
+];
+
+const UNIQUES = [
+    {name:'Cursed Dagger',type:'dagger',tier:0,stats:{dmgMin:8,dmgMax:16,crit:20,darkDmg:10},neg:{hp:-15},reqDex:6},
+    {name:'Guardian Shield',type:'shield',tier:0,stats:{armor:25,block:30,hp:20},neg:{},reqStr:8},
+    {name:'Blood Ring',type:'ring',tier:0,stats:{dmgMin:3,dmgMax:6,hpRegen:3},neg:{fireRes:-15}},
+    {name:'Inferno Blade',type:'sword',tier:1,stats:{dmgMin:12,dmgMax:22,fireDmg:25},neg:{coldRes:-20},reqStr:12},
+    {name:'Berserker Helm',type:'helmet',tier:1,stats:{str:15,dmgMin:5,dmgMax:10,critDmg:30},neg:{armor:-10,eva:-10},reqStr:14},
+    {name:'Doom Greatsword',type:'bow',tier:2,stats:{dmgMin:25,dmgMax:50,crit:18,fireDmg:15},neg:{},reqDex:22},
+];
+const UNIQUE_TIER_FLOORS = {0:1,1:5,2:10};
+
+const SETS = {
+    "Hero's Legacy": {
+        pieces: {
+            "Hero's Sword": {type:'sword',stats:{dmgMin:15,dmgMax:28,str:5},reqStr:14},
+            "Hero's Shield": {type:'shield',stats:{armor:35,block:25,hp:15},reqStr:12},
+            "Hero's Helm": {type:'helmet',stats:{armor:22,hp:20,fireRes:10},reqStr:10},
+            "Hero's Armor": {type:'body',stats:{armor:50,hp:30},reqStr:16}
+        },
+        bonuses: {2:{str:10,hp:20},3:{dmgMin:5,dmgMax:10,armor:15},4:{crit:10,fireRes:20,coldRes:20}}
+    }
+};
+const SET_MIN_FLOOR = 8;
+
+const ENEMIES = [
+    {name:'Slime',char:'s',hp:15,atkMin:2,atkMax:5,armor:0,exp:8,gold:5},
+    {name:'Goblin',char:'g',hp:28,atkMin:5,atkMax:12,armor:4,exp:18,gold:14},
+    {name:'Orc',char:'o',hp:55,atkMin:10,atkMax:22,armor:10,exp:40,gold:30},
+    {name:'Skeleton',char:'k',hp:40,atkMin:8,atkMax:16,armor:6,exp:30,gold:22,coldDmg:6},
+    {name:'Dragon',char:'D',hp:180,atkMin:25,atkMax:50,armor:35,exp:200,gold:200,fireDmg:30}
+];
+
+// ==================== GAME STATE ====================
+let game = null;
+
+class Game {
+    constructor() {
+        this.player = null;
+        this.dungeon = null;
+        this.floor = 1;
+        this.messages = [];
+        this.gameOver = false;
+    }
+
+    start() {
+        this.player = new Player();
+        this.floor = 1;
+        this.dungeon = new Dungeon();
+        this.dungeon.generate(this.floor);
+        this.player.x = this.dungeon.startX;
+        this.player.y = this.dungeon.startY;
+        this.msg('Welcome to the dungeon!');
+        this.save();
+    }
+
+    msg(text, cls = '') {
+        this.messages.push({text, cls});
+        if (this.messages.length > 4) this.messages.shift();
+    }
+
+    move(dx, dy) {
+        if (this.gameOver) return;
+        const nx = this.player.x + dx;
+        const ny = this.player.y + dy;
+
+        const enemy = this.dungeon.enemyAt(nx, ny);
+        if (enemy) {
+            this.combat(enemy);
+            this.enemyTurn();
+            return;
+        }
+
+        if (this.dungeon.walkable(nx, ny)) {
+            this.player.x = nx;
+            this.player.y = ny;
+            const item = this.dungeon.itemAt(nx, ny);
+            if (item) this.pickup(item);
+            if (nx === this.dungeon.stairsX && ny === this.dungeon.stairsY) {
+                this.msg('Stairs found! Tap [Stairs] to descend.', 'c-cyan');
+            }
+            this.enemyTurn();
+        }
+    }
+
+    pickup(item) {
+        this.dungeon.items = this.dungeon.items.filter(i => i !== item);
+        if (item.type === 'gold') {
+            this.player.gold += item.amount;
+            this.msg(`+${item.amount}G`, 'c-rare');
+        } else if (item.type === 'potion') {
+            if (this.player.inventory.length < 20) {
+                this.player.inventory.push(item);
+                this.msg('Potion acquired!', 'c-legend');
+            } else {
+                this.msg('Inventory full!', 'c-red');
+                this.dungeon.items.push(item);
+            }
+        } else if (item.type === 'equip') {
+            if (this.player.inventory.length < 20) {
+                this.player.inventory.push(item);
+                this.msg(`${item.equip.name}`, RARITY[item.equip.rarity].cls);
+            } else {
+                this.msg('Inventory full!', 'c-red');
+                this.dungeon.items.push(item);
+            }
+        }
+    }
+
+    combat(enemy) {
+        const stats = this.player.getStats();
+        let dmg = randInt(stats.dmgMin, stats.dmgMax);
+        const crit = randInt(1, 100) <= stats.crit;
+        if (crit) dmg = Math.floor(dmg * stats.critDmg / 100);
+        dmg = Math.max(1, dmg - Math.floor(enemy.armor / 2));
+        const elem = stats.fireDmg + stats.coldDmg + stats.ltnDmg + stats.darkDmg;
+        const total = dmg + elem;
+        enemy.hp -= total;
+        this.msg(`${crit?'CRIT! ':''}${enemy.name}: ${total}dmg`, crit?'c-rare':'');
+
+        if (enemy.hp <= 0) {
+            this.player.exp += enemy.exp;
+            this.player.gold += enemy.gold;
+            this.msg(`+${enemy.exp}EXP +${enemy.gold}G`, 'c-green');
+            this.dungeon.enemies = this.dungeon.enemies.filter(e => e !== enemy);
+            this.checkLevelUp();
+        }
+    }
+
+    checkLevelUp() {
+        while (this.player.exp >= this.player.expNext) {
+            this.player.exp -= this.player.expNext;
+            this.player.level++;
+            this.player.expNext = Math.floor(this.player.expNext * 1.3);
+            this.player.baseHp += 10;
+            this.player.hp = this.player.getStats().maxHp;
+            this.msg(`Level UP! Lv.${this.player.level}`, 'c-rare');
+        }
+    }
+
+    enemyTurn() {
+        const stats = this.player.getStats();
+        for (const e of this.dungeon.enemies) {
+            const dist = Math.abs(e.x - this.player.x) + Math.abs(e.y - this.player.y);
+            if (dist === 1) {
+                if (randInt(1,100) <= stats.eva) { this.msg(`Evaded ${e.name}!`,'c-green'); continue; }
+                if (randInt(1,100) <= stats.block) { this.msg(`Blocked ${e.name}!`,'c-cyan'); continue; }
+                let phys = Math.max(1, randInt(e.atkMin, e.atkMax) - Math.floor(stats.armor/3));
+                let elem = Math.floor((e.fireDmg||0)*(100-stats.fireRes)/100) + Math.floor((e.coldDmg||0)*(100-stats.coldRes)/100);
+                let total = phys + elem;
+                this.player.hp -= total;
+                this.msg(`${e.name}: ${total}dmg to you!`, 'c-red');
+                if (this.player.hp <= 0) {
+                    this.gameOver = true;
+                    this.msg('You died...', 'c-red');
+                    localStorage.removeItem('dungeonSave');
+                    return;
+                }
+            } else if (dist <= 6) {
+                const dx = e.x < this.player.x ? 1 : (e.x > this.player.x ? -1 : 0);
+                const dy = e.y < this.player.y ? 1 : (e.y > this.player.y ? -1 : 0);
+                const nx = e.x + dx, ny = e.y + dy;
+                if (this.dungeon.walkable(nx,ny) && !this.dungeon.enemyAt(nx,ny) && !(nx===this.player.x && ny===this.player.y)) {
+                    e.x = nx; e.y = ny;
+                }
+            }
+        }
+    }
+
+    descend() {
+        if (this.player.x !== this.dungeon.stairsX || this.player.y !== this.dungeon.stairsY) {
+            this.msg('Not on stairs!', 'c-red');
+            return;
+        }
+        this.floor++;
+        if (this.floor > 15) {
+            this.gameOver = true;
+            this.msg('VICTORY! You cleared the dungeon!', 'c-rare');
+            localStorage.removeItem('dungeonSave');
+            return;
+        }
+        this.dungeon = new Dungeon();
+        this.dungeon.generate(this.floor);
+        this.player.x = this.dungeon.startX;
+        this.player.y = this.dungeon.startY;
+        this.msg(`--- B${this.floor}F ---`, 'c-cyan');
+        this.save();
+    }
+
+    save() {
+        const data = {
+            floor: this.floor,
+            player: this.player.toJSON(),
+            dungeon: this.dungeon.toJSON(),
+            messages: this.messages
+        };
+        localStorage.setItem('dungeonSave', JSON.stringify(data));
+    }
+
+    load() {
+        const raw = localStorage.getItem('dungeonSave');
+        if (!raw) return false;
+        try {
+            const data = JSON.parse(raw);
+            this.floor = data.floor;
+            this.player = Player.fromJSON(data.player);
+            this.dungeon = Dungeon.fromJSON(data.dungeon);
+            this.messages = data.messages || [];
+            return true;
+        } catch(e) { return false; }
+    }
+}
+
+// ==================== PLAYER ====================
+class Player {
+    constructor() {
+        this.x = 0; this.y = 0;
+        this.level = 1; this.exp = 0; this.expNext = 30;
+        this.baseStr = 10; this.baseDex = 10; this.baseInt = 10;
+        this.baseHp = 50; this.hp = 50;
+        this.gold = 0;
+        this.equipment = {};
+        this.inventory = [];
+    }
+
+    getStats() {
+        const s = {
+            str: this.baseStr, dex: this.baseDex, int: this.baseInt,
+            maxHp: this.baseHp, dmgMin: 2, dmgMax: 5,
+            fireDmg: 0, coldDmg: 0, ltnDmg: 0, darkDmg: 0,
+            crit: 5, critDmg: 150, armor: 0, eva: 0, block: 0,
+            fireRes: 0, coldRes: 0, ltnRes: 0, darkRes: 0, hpRegen: 0
+        };
+
+        for (const slot of EQUIP_SLOTS) {
+            const eq = this.equipment[slot];
+            if (eq) {
+                const total = eq.getTotalStats();
+                for (const k in total) {
+                    if (k in s) s[k] += total[k];
+                }
+            }
+        }
+
+        // Set bonuses
+        const setCounts = {};
+        for (const slot of EQUIP_SLOTS) {
+            const eq = this.equipment[slot];
+            if (eq && eq.setName) {
+                setCounts[eq.setName] = (setCounts[eq.setName] || 0) + 1;
+            }
+        }
+        for (const setName in setCounts) {
+            const set = SETS[setName];
+            if (set) {
+                for (const reqCount in set.bonuses) {
+                    if (setCounts[setName] >= parseInt(reqCount)) {
+                        const bonus = set.bonuses[reqCount];
+                        for (const k in bonus) {
+                            const mapped = statKeyMap(k);
+                            if (mapped in s) s[mapped] += bonus[k];
+                        }
+                    }
+                }
+            }
+        }
+
+        s.fireRes = Math.min(75, s.fireRes);
+        s.coldRes = Math.min(75, s.coldRes);
+        s.ltnRes = Math.min(75, s.ltnRes);
+        s.darkRes = Math.min(75, s.darkRes);
+
+        return s;
+    }
+
+    canEquip(eq) {
+        const s = this.getStats();
+        return s.str >= (eq.reqStr||0) && s.dex >= (eq.reqDex||0) && s.int >= (eq.reqInt||0);
+    }
+
+    equip(eq, slot) {
+        const type = EQUIP_TYPES[eq.type];
+        const unequipped = [];
+
+        if (type.twoHand) {
+            if (this.equipment.mainHand) unequipped.push(this.equipment.mainHand);
+            if (this.equipment.offHand) unequipped.push(this.equipment.offHand);
+            this.equipment.mainHand = eq;
+            this.equipment.offHand = null;
+        } else {
+            if (slot === 'offHand' && this.equipment.mainHand && EQUIP_TYPES[this.equipment.mainHand.type].twoHand) {
+                unequipped.push(this.equipment.mainHand);
+                this.equipment.mainHand = null;
+            }
+            if (this.equipment[slot]) unequipped.push(this.equipment[slot]);
+            this.equipment[slot] = eq;
+        }
+        return unequipped;
+    }
+
+    toJSON() {
+        const eq = {};
+        for (const slot of EQUIP_SLOTS) {
+            eq[slot] = this.equipment[slot] ? this.equipment[slot].toJSON() : null;
+        }
+        return {
+            x: this.x, y: this.y, level: this.level, exp: this.exp, expNext: this.expNext,
+            baseStr: this.baseStr, baseDex: this.baseDex, baseInt: this.baseInt,
+            baseHp: this.baseHp, hp: this.hp, gold: this.gold,
+            equipment: eq,
+            inventory: this.inventory.map(i => i.type === 'equip' ? {type:'equip',equip:i.equip.toJSON()} : i)
+        };
+    }
+
+    static fromJSON(d) {
+        const p = new Player();
+        Object.assign(p, {x:d.x,y:d.y,level:d.level,exp:d.exp,expNext:d.expNext,
+            baseStr:d.baseStr,baseDex:d.baseDex,baseInt:d.baseInt,baseHp:d.baseHp,hp:d.hp,gold:d.gold});
+        for (const slot of EQUIP_SLOTS) {
+            p.equipment[slot] = d.equipment[slot] ? Equipment.fromJSON(d.equipment[slot]) : null;
+        }
+        p.inventory = d.inventory.map(i => i.type === 'equip' ? {type:'equip',equip:Equipment.fromJSON(i.equip)} : i);
+        return p;
+    }
+}
+
+// ==================== EQUIPMENT ====================
+class Equipment {
+    constructor(name, baseName, type, rarity, tier, stats, reqStr=0, reqDex=0, reqInt=0, setName='') {
+        this.name = name;
+        this.baseName = baseName;
+        this.type = type;
+        this.rarity = rarity;
+        this.tier = tier;
+        this.stats = stats;
+        this.reqStr = reqStr;
+        this.reqDex = reqDex;
+        this.reqInt = reqInt;
+        this.setName = setName;
+        this.prefixes = [];
+        this.suffixes = [];
+    }
+
+    getTotalStats() {
+        const total = {...this.stats};
+        for (const p of this.prefixes) {
+            for (const k in p.stats) total[k] = (total[k]||0) + p.stats[k];
+        }
+        for (const s of this.suffixes) {
+            for (const k in s.stats) total[k] = (total[k]||0) + s.stats[k];
+        }
+        return total;
+    }
+
+    getFullName() {
+        const tierName = TIER[this.tier].name;
+        let name = tierName + this.baseName;
+        for (const p of this.prefixes) name = p.name + name;
+        for (const s of this.suffixes) name = name + s.name;
+        return name;
+    }
+
+    toJSON() {
+        return {
+            name: this.name, baseName: this.baseName, type: this.type,
+            rarity: this.rarity, tier: this.tier, stats: this.stats,
+            reqStr: this.reqStr, reqDex: this.reqDex, reqInt: this.reqInt,
+            setName: this.setName, prefixes: this.prefixes, suffixes: this.suffixes
+        };
+    }
+
+    static fromJSON(d) {
+        const eq = new Equipment(d.name, d.baseName, d.type, d.rarity, d.tier||'COMMON', d.stats, d.reqStr, d.reqDex, d.reqInt, d.setName||'');
+        eq.prefixes = d.prefixes || [];
+        eq.suffixes = d.suffixes || [];
+        return eq;
+    }
+}
+
+function generateEquipment(floor) {
+    const roll = Math.random();
+    let rarity;
+    if (roll < 0.45) rarity = 'NORMAL';
+    else if (roll < 0.75) rarity = 'MAGIC';
+    else if (roll < 0.93) rarity = 'RARE';
+    else if (roll < 0.96) rarity = 'UNIQUE';
+    else if (roll < 0.99) rarity = 'LEGEND';
+    else rarity = 'SET';
+
+    // Set
+    if (rarity === 'SET' && floor >= SET_MIN_FLOOR) {
+        const setNames = Object.keys(SETS);
+        const setName = setNames[randInt(0, setNames.length-1)];
+        const set = SETS[setName];
+        const pieceNames = Object.keys(set.pieces);
+        const pieceName = pieceNames[randInt(0, pieceNames.length-1)];
+        const piece = set.pieces[pieceName];
+        return new Equipment(pieceName, pieceName, piece.type, 'SET', 'COMMON', {...piece.stats}, piece.reqStr||0, piece.reqDex||0, piece.reqInt||0, setName);
+    }
+    if (rarity === 'SET') rarity = 'LEGEND';
+
+    // Unique
+    if (rarity === 'UNIQUE') {
+        const available = UNIQUES.filter(u => floor >= UNIQUE_TIER_FLOORS[u.tier]);
+        if (available.length > 0) {
+            const weights = available.map(u => 1 / Math.pow(2, u.tier));
+            const u = weightedRandom(available, weights);
+            const stats = {...u.stats};
+            if (u.neg) for (const k in u.neg) stats[k] = (stats[k]||0) + u.neg[k];
+            return new Equipment(u.name, u.name, u.type, 'UNIQUE', 'COMMON', stats, u.reqStr||0, u.reqDex||0, u.reqInt||0);
+        }
+        rarity = 'RARE';
+    }
+
+    // Legend
+    if (rarity === 'LEGEND') {
+        const types = Object.keys(EQUIP_TYPES);
+        const type = types[randInt(0, types.length-1)];
+        const bases = EQUIP_TYPES[type].bases;
+        const base = bases[randInt(0, bases.length-1)];
+        const tier = floor < 10 ? 'MASTERWORK' : 'SUPREME';
+        const mult = TIER[tier].mult;
+        const stats = {};
+        for (const k in base) {
+            if (!['name','reqStr','reqDex','reqInt'].includes(k)) stats[k] = Math.floor((base[k]||0) * mult);
+        }
+        const eq = new Equipment(base.name, base.name, type, 'LEGEND', tier, stats,
+            Math.floor((base.reqStr||0)*TIER[tier].req), Math.floor((base.reqDex||0)*TIER[tier].req), Math.floor((base.reqInt||0)*TIER[tier].req));
+        addAffixes(eq, 3, 3, floor);
+        eq.name = eq.getFullName();
+        return eq;
+    }
+
+    // Normal/Magic/Rare
+    const types = Object.keys(EQUIP_TYPES);
+    const type = types[randInt(0, types.length-1)];
+    const bases = EQUIP_TYPES[type].bases;
+    const maxIdx = Math.min(bases.length, 1 + Math.floor(floor/3));
+    const base = bases[randInt(0, maxIdx-1)];
+
+    const tier = selectTier(floor);
+    const mult = TIER[tier].mult;
+    const reqMult = TIER[tier].req;
+
+    const stats = {};
+    for (const k in base) {
+        if (!['name','reqStr','reqDex','reqInt'].includes(k)) stats[k] = Math.floor((base[k]||0) * mult);
+    }
+
+    const eq = new Equipment(base.name, base.name, type, rarity, tier, stats,
+        reqMult > 0 ? Math.floor((base.reqStr||0)*reqMult) : 0,
+        reqMult > 0 ? Math.floor((base.reqDex||0)*reqMult) : 0,
+        reqMult > 0 ? Math.floor((base.reqInt||0)*reqMult) : 0);
+
+    const affixCount = RARITY[rarity].affixes;
+    addAffixes(eq, affixCount, affixCount, floor);
+    eq.name = eq.getFullName();
+    return eq;
+}
+
+function selectTier(floor) {
+    const available = Object.keys(TIER_FLOORS).filter(t => floor >= TIER_FLOORS[t]);
+    if (available.length === 0) return 'CRUDE';
+    const weights = available.map(t => {
+        const tierLv = Object.keys(TIER_FLOORS).indexOf(t) + 1;
+        const minFloor = TIER_FLOORS[t];
+        const freshness = Math.max(0.3, 1.0 - (floor - minFloor) * 0.06);
+        const penalty = tierLv <= 2 ? Math.max(0.1, 1.0 - (floor-1)*0.08) : 1.0;
+        return Math.max(0.05, freshness * penalty);
+    });
+    return weightedRandom(available, weights);
+}
+
+function addAffixes(eq, numPre, numSuf, floor) {
+    const scale = 1 + floor * 0.08;
+    const availPre = [...PREFIXES];
+    for (let i = 0; i < randInt(0, numPre); i++) {
+        if (availPre.length === 0) break;
+        const idx = randInt(0, availPre.length-1);
+        const p = availPre.splice(idx, 1)[0];
+        const stats = {};
+        for (const k in p.stats) stats[k] = Math.floor(p.stats[k] * scale * (0.8 + Math.random()*0.4));
+        eq.prefixes.push({name: p.name, stats});
+    }
+    const availSuf = [...SUFFIXES];
+    for (let i = 0; i < randInt(0, numSuf); i++) {
+        if (availSuf.length === 0) break;
+        const idx = randInt(0, availSuf.length-1);
+        const s = availSuf.splice(idx, 1)[0];
+        const stats = {};
+        for (const k in s.stats) stats[k] = Math.floor(s.stats[k] * scale * (0.8 + Math.random()*0.4));
+        eq.suffixes.push({name: s.name, stats});
+    }
+}
+
+// ==================== DUNGEON ====================
+class Dungeon {
+    constructor() {
+        this.tiles = [];
+        this.enemies = [];
+        this.items = [];
+        this.stairsX = 0; this.stairsY = 0;
+        this.startX = 0; this.startY = 0;
+    }
+
+    generate(floor) {
+        this.tiles = Array(MAP_HEIGHT).fill(null).map(() => Array(MAP_WIDTH).fill(TILE.WALL));
+        this.enemies = [];
+        this.items = [];
+        const rooms = [];
+
+        for (let i = 0; i < MAX_ROOMS; i++) {
+            const w = randInt(ROOM_MIN, ROOM_MAX);
+            const h = randInt(ROOM_MIN, ROOM_MAX);
+            const x = randInt(1, MAP_WIDTH - w - 1);
+            const y = randInt(1, MAP_HEIGHT - h - 1);
+
+            let overlap = false;
+            for (const r of rooms) {
+                if (x <= r.x2 && x+w >= r.x1 && y <= r.y2 && y+h >= r.y1) { overlap = true; break; }
+            }
+            if (overlap) continue;
+
+            for (let ry = y; ry < y+h; ry++) {
+                for (let rx = x; rx < x+w; rx++) {
+                    this.tiles[ry][rx] = TILE.FLOOR;
+                }
+            }
+
+            if (rooms.length > 0) {
+                const prev = rooms[rooms.length-1];
+                const cx1 = Math.floor((prev.x1+prev.x2)/2), cy1 = Math.floor((prev.y1+prev.y2)/2);
+                const cx2 = Math.floor(x + w/2), cy2 = Math.floor(y + h/2);
+                if (Math.random() < 0.5) {
+                    for (let tx = Math.min(cx1,cx2); tx <= Math.max(cx1,cx2); tx++) this.tiles[cy1][tx] = TILE.FLOOR;
+                    for (let ty = Math.min(cy1,cy2); ty <= Math.max(cy1,cy2); ty++) this.tiles[ty][cx2] = TILE.FLOOR;
+                } else {
+                    for (let ty = Math.min(cy1,cy2); ty <= Math.max(cy1,cy2); ty++) this.tiles[ty][cx1] = TILE.FLOOR;
+                    for (let tx = Math.min(cx1,cx2); tx <= Math.max(cx1,cx2); tx++) this.tiles[cy2][tx] = TILE.FLOOR;
+                }
+            }
+
+            rooms.push({x1:x, y1:y, x2:x+w-1, y2:y+h-1});
+        }
+
+        if (rooms.length > 0) {
+            const first = rooms[0];
+            this.startX = Math.floor((first.x1+first.x2)/2);
+            this.startY = Math.floor((first.y1+first.y2)/2);
+            const last = rooms[rooms.length-1];
+            this.stairsX = Math.floor((last.x1+last.x2)/2);
+            this.stairsY = Math.floor((last.y1+last.y2)/2);
+            this.tiles[this.stairsY][this.stairsX] = TILE.STAIRS;
+        }
+
+        // Spawn enemies
+        for (let i = 1; i < rooms.length; i++) {
+            const r = rooms[i];
+            const count = randInt(1, 3);
+            for (let j = 0; j < count; j++) {
+                const ex = randInt(r.x1+1, r.x2-1);
+                const ey = randInt(r.y1+1, r.y2-1);
+                if (!this.enemyAt(ex, ey)) {
+                    this.enemies.push(this.createEnemy(ex, ey, floor));
+                }
+            }
+        }
+
+        // Spawn items
+        for (const r of rooms) {
+            const count = randInt(0, 2);
+            for (let j = 0; j < count; j++) {
+                const ix = randInt(r.x1+1, r.x2-1);
+                const iy = randInt(r.y1+1, r.y2-1);
+                if (!this.itemAt(ix, iy)) {
+                    const roll = Math.random();
+                    if (roll < 0.3) {
+                        this.items.push({type:'gold', x:ix, y:iy, amount: randInt(5,20)*floor});
+                    } else if (roll < 0.5) {
+                        this.items.push({type:'potion', x:ix, y:iy, heal: 20+floor*5});
+                    } else {
+                        this.items.push({type:'equip', x:ix, y:iy, equip: generateEquipment(floor)});
+                    }
+                }
+            }
+        }
+    }
+
+    createEnemy(x, y, floor) {
+        const maxIdx = Math.min(ENEMIES.length, 1 + Math.floor(floor/2));
+        const weights = Array(maxIdx).fill(0).map((_, i) => 1/(i+1));
+        const template = weightedRandom(ENEMIES.slice(0, maxIdx), weights);
+        const scale = 1 + (floor-1) * 0.15;
+        return {
+            x, y, name: template.name, char: template.char,
+            hp: Math.floor(template.hp * scale), maxHp: Math.floor(template.hp * scale),
+            atkMin: Math.floor(template.atkMin * scale), atkMax: Math.floor(template.atkMax * scale),
+            armor: Math.floor(template.armor * scale),
+            exp: Math.floor(template.exp * scale), gold: Math.floor(template.gold * scale),
+            fireDmg: Math.floor((template.fireDmg||0) * scale),
+            coldDmg: Math.floor((template.coldDmg||0) * scale)
+        };
+    }
+
+    walkable(x, y) {
+        return x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT && this.tiles[y][x] !== TILE.WALL;
+    }
+    enemyAt(x, y) { return this.enemies.find(e => e.x === x && e.y === y); }
+    itemAt(x, y) { return this.items.find(i => i.x === x && i.y === y); }
+
+    toJSON() {
+        return {
+            tiles: this.tiles.map(row => row.join('')),
+            enemies: this.enemies,
+            items: this.items.map(i => i.type === 'equip' ? {...i, equip: i.equip.toJSON()} : i),
+            stairsX: this.stairsX, stairsY: this.stairsY,
+            startX: this.startX, startY: this.startY
+        };
+    }
+
+    static fromJSON(d) {
+        const dg = new Dungeon();
+        dg.tiles = d.tiles.map(row => row.split(''));
+        dg.enemies = d.enemies;
+        dg.items = d.items.map(i => i.type === 'equip' ? {...i, equip: Equipment.fromJSON(i.equip)} : i);
+        dg.stairsX = d.stairsX; dg.stairsY = d.stairsY;
+        dg.startX = d.startX; dg.startY = d.startY;
+        return dg;
+    }
+}
+
+// ==================== UTILITIES ====================
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function weightedRandom(items, weights) {
+    const total = weights.reduce((a,b) => a+b, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < items.length; i++) {
+        r -= weights[i];
+        if (r <= 0) return items[i];
+    }
+    return items[items.length-1];
+}
+function statKeyMap(k) {
+    const map = {str:'str',dex:'dex',int:'int',hp:'maxHp',maxHp:'maxHp',dmgMin:'dmgMin',dmgMax:'dmgMax',
+        armor:'armor',eva:'eva',block:'block',crit:'crit',critDmg:'critDmg',
+        fireDmg:'fireDmg',coldDmg:'coldDmg',ltnDmg:'ltnDmg',darkDmg:'darkDmg',
+        fireRes:'fireRes',coldRes:'coldRes',ltnRes:'ltnRes',darkRes:'darkRes',hpRegen:'hpRegen'};
+    return map[k] || k;
+}
+
+// ==================== RENDERING ====================
+function render() {
+    if (!game || !game.player) return;
+
+    // Header
+    const stats = game.player.getStats();
+    document.getElementById('level').textContent = game.player.level;
+    document.getElementById('hp').textContent = game.player.hp;
+    document.getElementById('max-hp').textContent = stats.maxHp;
+    document.getElementById('hp-bar').style.width = (game.player.hp / stats.maxHp * 100) + '%';
+    document.getElementById('gold').textContent = game.player.gold;
+    document.getElementById('floor').textContent = game.floor;
+
+    // Map
+    let mapHtml = '';
+    for (let y = 0; y < MAP_HEIGHT; y++) {
+        for (let x = 0; x < MAP_WIDTH; x++) {
+            if (x === game.player.x && y === game.player.y) {
+                mapHtml += '<span class="c-green">@</span>';
+            } else if (game.dungeon.enemyAt(x, y)) {
+                const e = game.dungeon.enemyAt(x, y);
+                mapHtml += `<span class="c-red">${e.char}</span>`;
+            } else if (game.dungeon.itemAt(x, y)) {
+                const item = game.dungeon.itemAt(x, y);
+                if (item.type === 'equip') mapHtml += '<span class="c-rare">[</span>';
+                else if (item.type === 'potion') mapHtml += '<span class="c-legend">!</span>';
+                else mapHtml += '<span class="c-rare">$</span>';
+            } else if (game.dungeon.tiles[y][x] === TILE.STAIRS) {
+                mapHtml += '<span class="c-cyan">></span>';
+            } else {
+                mapHtml += game.dungeon.tiles[y][x];
+            }
+        }
+        mapHtml += '\n';
+    }
+    document.getElementById('map').innerHTML = mapHtml;
+
+    // Equipment
+    let eqHtml = '';
+    for (const slot of EQUIP_SLOTS) {
+        const eq = game.player.equipment[slot];
+        const name = eq ? `<span class="${RARITY[eq.rarity].cls}">${eq.name.substring(0,10)}</span>` : '<span class="c-gray">---</span>';
+        eqHtml += `<div class="equip-slot" data-slot="${slot}">${SLOT_NAMES[slot]}: ${name}</div>`;
+    }
+    document.getElementById('equipment-list').innerHTML = eqHtml;
+
+    // Messages
+    let msgHtml = '';
+    for (const m of game.messages) {
+        msgHtml += `<div class="msg ${m.cls}">${m.text}</div>`;
+    }
+    document.getElementById('messages').innerHTML = msgHtml;
+
+    // Game over check
+    if (game.gameOver) {
+        document.getElementById('gameover-title').textContent = game.player.hp <= 0 ? 'GAME OVER' : 'VICTORY!';
+        document.getElementById('gameover-msg').textContent = `Floor: B${game.floor}F | Gold: ${game.player.gold} | Level: ${game.player.level}`;
+        document.getElementById('gameover-modal').classList.add('active');
+    }
+}
+
+function renderInventory() {
+    const list = document.getElementById('inventory-list');
+    document.getElementById('inv-count').textContent = game.player.inventory.length;
+    let html = '';
+    game.player.inventory.forEach((item, idx) => {
+        if (item.type === 'potion') {
+            html += `<li class="item-row" data-idx="${idx}"><span class="c-legend">Potion</span> HP+${item.heal}</li>`;
+        } else {
+            const eq = item.equip;
+            const canEquip = game.player.canEquip(eq);
+            html += `<li class="item-row" data-idx="${idx}"><span class="${RARITY[eq.rarity].cls}">${eq.name}</span>${canEquip?'':' <span class="c-red">!</span>'}</li>`;
+        }
+    });
+    list.innerHTML = html || '<li class="c-gray">Empty</li>';
+    document.getElementById('item-detail').style.display = 'none';
+}
+
+function showItemDetail(idx) {
+    const item = game.player.inventory[idx];
+    const detail = document.getElementById('item-detail');
+    if (item.type === 'potion') {
+        detail.innerHTML = `<div class="c-legend">Potion</div><div>Heal: +${item.heal} HP</div>
+            <button class="action-btn" style="margin-top:10px;width:100%" onclick="useItem(${idx})">Use</button>`;
+    } else {
+        const eq = item.equip;
+        const stats = eq.getTotalStats();
+        const canEquip = game.player.canEquip(eq);
+        let html = `<div class="${RARITY[eq.rarity].cls}">${eq.name}</div>`;
+        html += `<div class="c-gray">${EQUIP_TYPES[eq.type].name} | ${RARITY[eq.rarity].name}</div>`;
+        if (eq.reqStr || eq.reqDex || eq.reqInt) {
+            html += `<div>Req: `;
+            if (eq.reqStr) html += `<span class="${game.player.getStats().str >= eq.reqStr ? 'c-green' : 'c-red'}">STR:${eq.reqStr}</span> `;
+            if (eq.reqDex) html += `<span class="${game.player.getStats().dex >= eq.reqDex ? 'c-green' : 'c-red'}">DEX:${eq.reqDex}</span> `;
+            if (eq.reqInt) html += `<span class="${game.player.getStats().int >= eq.reqInt ? 'c-green' : 'c-red'}">INT:${eq.reqInt}</span>`;
+            html += `</div>`;
+        }
+        html += `<div class="c-gray">--- Stats ---</div>`;
+        for (const k in stats) {
+            if (stats[k] !== 0) {
+                const isNeg = stats[k] < 0;
+                html += `<div class="${isNeg?'negative':''}">${formatStat(k)}: ${stats[k]>0?'+':''}${stats[k]}</div>`;
+            }
+        }
+        if (eq.setName) html += `<div class="c-set">Set: ${eq.setName}</div>`;
+        html += `<button class="action-btn" style="margin-top:10px;width:100%" onclick="equipItem(${idx})" ${canEquip?'':'disabled'}>Equip</button>`;
+        html += `<button class="action-btn" style="margin-top:5px;width:100%;background:#c0392b" onclick="dropItem(${idx})">Drop</button>`;
+    }
+    detail.innerHTML = html;
+    detail.style.display = 'block';
+}
+
+function formatStat(k) {
+    const names = {dmgMin:'Min Dmg',dmgMax:'Max Dmg',armor:'Armor',hp:'HP',maxHp:'Max HP',str:'STR',dex:'DEX',int:'INT',
+        eva:'Evasion',block:'Block',crit:'Crit%',critDmg:'Crit Dmg',
+        fireDmg:'Fire Dmg',coldDmg:'Cold Dmg',ltnDmg:'Ltng Dmg',darkDmg:'Dark Dmg',
+        fireRes:'Fire Res',coldRes:'Cold Res',ltnRes:'Ltng Res',darkRes:'Dark Res',hpRegen:'HP Regen'};
+    return names[k] || k;
+}
+
+function useItem(idx) {
+    const item = game.player.inventory[idx];
+    if (item.type === 'potion') {
+        const stats = game.player.getStats();
+        const heal = Math.min(item.heal, stats.maxHp - game.player.hp);
+        game.player.hp += heal;
+        game.player.inventory.splice(idx, 1);
+        game.msg(`HP +${heal}`, 'c-green');
+        renderInventory();
+        render();
+    }
+}
+
+function equipItem(idx) {
+    const item = game.player.inventory[idx];
+    if (item.type !== 'equip') return;
+    const eq = item.equip;
+    if (!game.player.canEquip(eq)) return;
+
+    const type = EQUIP_TYPES[eq.type];
+    if (type.slots.length === 1) {
+        doEquip(idx, type.slots[0]);
+    } else {
+        // Show slot selection
+        showSlotSelect(idx, type.slots);
+    }
+}
+
+function showSlotSelect(idx, slots) {
+    const list = document.getElementById('equip-select-list');
+    let html = '';
+    for (const slot of slots) {
+        const current = game.player.equipment[slot];
+        const name = current ? `<span class="${RARITY[current.rarity].cls}">${current.name}</span>` : '<span class="c-gray">Empty</span>';
+        html += `<li class="item-row" onclick="doEquip(${idx},'${slot}')">${SLOT_NAMES[slot]}: ${name}</li>`;
+    }
+    list.innerHTML = html;
+    document.getElementById('equip-modal').classList.add('active');
+}
+
+function doEquip(idx, slot) {
+    const item = game.player.inventory[idx];
+    const eq = item.equip;
+    game.player.inventory.splice(idx, 1);
+    const old = game.player.equip(eq, slot);
+    for (const o of old) {
+        if (o) game.player.inventory.push({type:'equip', equip: o});
+    }
+    game.msg(`Equipped ${eq.name}`, RARITY[eq.rarity].cls);
+    document.getElementById('equip-modal').classList.remove('active');
+    document.getElementById('inventory-modal').classList.remove('active');
+    render();
+}
+
+function dropItem(idx) {
+    game.player.inventory.splice(idx, 1);
+    game.msg('Dropped item');
+    renderInventory();
+}
+
+function showEquipSelect(slot) {
+    const candidates = game.player.inventory.filter(i => {
+        if (i.type !== 'equip') return false;
+        const type = EQUIP_TYPES[i.equip.type];
+        return type.slots.includes(slot);
+    });
+
+    const list = document.getElementById('equip-select-list');
+    document.getElementById('equip-modal-title').textContent = `${SLOT_NAMES[slot]} - Select Equipment`;
+    let html = '';
+
+    const current = game.player.equipment[slot];
+    if (current) {
+        html += `<li class="item-row c-red" onclick="unequipSlot('${slot}')">[Unequip] ${current.name}</li>`;
+    }
+
+    candidates.forEach((item, i) => {
+        const eq = item.equip;
+        const canEquip = game.player.canEquip(eq);
+        const realIdx = game.player.inventory.indexOf(item);
+        html += `<li class="item-row" onclick="doEquip(${realIdx},'${slot}')" ${canEquip?'':'style="opacity:0.5"'}>
+            <span class="${RARITY[eq.rarity].cls}">${eq.name}</span>${canEquip?'':' <span class="c-red">!</span>'}</li>`;
+    });
+
+    if (!current && candidates.length === 0) {
+        html = '<li class="c-gray">No equipment available</li>';
+    }
+
+    list.innerHTML = html;
+    document.getElementById('equip-modal').classList.add('active');
+}
+
+function unequipSlot(slot) {
+    const eq = game.player.equipment[slot];
+    if (eq) {
+        game.player.inventory.push({type:'equip', equip: eq});
+        game.player.equipment[slot] = null;
+        game.msg(`Unequipped ${eq.name}`);
+    }
+    document.getElementById('equip-modal').classList.remove('active');
+    render();
+}
+
+// ==================== EVENT HANDLERS ====================
+document.addEventListener('DOMContentLoaded', () => {
+    // Check for save
+    if (localStorage.getItem('dungeonSave')) {
+        document.getElementById('btn-continue').disabled = false;
+    }
+
+    // Title buttons
+    document.getElementById('btn-continue').onclick = () => {
+        game = new Game();
+        if (game.load()) {
+            document.getElementById('title-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            render();
+        }
+    };
+
+    document.getElementById('btn-new').onclick = () => {
+        game = new Game();
+        game.start();
+        document.getElementById('title-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        render();
+    };
+
+    // Movement
+    document.querySelectorAll('.ctrl-btn').forEach(btn => {
+        btn.onclick = () => {
+            const dir = btn.dataset.dir;
+            const moves = {up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+            if (moves[dir]) {
+                game.move(moves[dir][0], moves[dir][1]);
+                render();
+            }
+        };
+    });
+
+    // Keyboard
+    document.addEventListener('keydown', e => {
+        if (!game || game.gameOver) return;
+        if (document.querySelector('.modal.active')) return;
+        const keys = {w:[0,-1],a:[-1,0],s:[0,1],d:[1,0],ArrowUp:[0,-1],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowRight:[1,0]};
+        if (keys[e.key]) {
+            game.move(keys[e.key][0], keys[e.key][1]);
+            render();
+            e.preventDefault();
+        } else if (e.key === 'Enter') {
+            game.descend();
+            render();
+        } else if (e.key === 'i') {
+            renderInventory();
+            document.getElementById('inventory-modal').classList.add('active');
+        }
+    });
+
+    // Action buttons
+    document.getElementById('btn-inventory').onclick = () => {
+        renderInventory();
+        document.getElementById('inventory-modal').classList.add('active');
+    };
+
+    document.getElementById('btn-stairs').onclick = () => {
+        game.descend();
+        render();
+    };
+
+    document.getElementById('btn-save').onclick = () => {
+        game.save();
+        game.msg('Game saved!', 'c-green');
+        render();
+    };
+
+    // Inventory
+    document.getElementById('inventory-list').onclick = e => {
+        const row = e.target.closest('.item-row');
+        if (row) {
+            document.querySelectorAll('.item-row').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+            showItemDetail(parseInt(row.dataset.idx));
+        }
+    };
+
+    document.getElementById('close-inventory').onclick = () => {
+        document.getElementById('inventory-modal').classList.remove('active');
+    };
+
+    // Equipment slots
+    document.getElementById('equipment-list').onclick = e => {
+        const slot = e.target.closest('.equip-slot');
+        if (slot) showEquipSelect(slot.dataset.slot);
+    };
+
+    document.getElementById('close-equip').onclick = () => {
+        document.getElementById('equip-modal').classList.remove('active');
+    };
+
+    // Game over
+    document.getElementById('btn-restart').onclick = () => {
+        document.getElementById('gameover-modal').classList.remove('active');
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('title-screen').style.display = 'block';
+        document.getElementById('btn-continue').disabled = !localStorage.getItem('dungeonSave');
+    };
+});
+</script>
+</body>
+</html>
