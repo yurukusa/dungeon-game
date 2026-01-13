@@ -114,6 +114,7 @@
             font-size: 14px;
         }
         .action-btn:active { background: #4a6a8a; }
+        .action-btn.flame { background: #1e3a5f; border: 1px solid #3498db; }
         /* Modal */
         .modal {
             display: none;
@@ -207,6 +208,7 @@
         .c-green { color: #2ecc71; }
         .c-cyan { color: #00bcd4; }
         .c-gray { color: #888; }
+        .c-flame { color: #3498db; }
         /* Title screen */
         #title-screen {
             text-align: center;
@@ -257,6 +259,63 @@
         }
         .stat-label { color: #888; }
         .stat-value { font-weight: bold; }
+        /* Town */
+        #town-screen {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .town-title {
+            font-size: 24px;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+        .npc-dialogue {
+            background: #0f0f23;
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+            white-space: pre-line;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .town-menu {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .town-btn {
+            padding: 12px 20px;
+            background: #2d4a6a;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .town-btn:hover { background: #4a6a8a; }
+        .town-btn:disabled { background: #333; color: #666; }
+        .soul-bar {
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        /* Dungeon select */
+        .dungeon-list { list-style: none; }
+        .dungeon-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: #2a2a4e;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .dungeon-item:hover { background: #3a3a5e; }
+        .dungeon-item.locked { opacity: 0.5; cursor: not-allowed; }
         @media (max-width: 600px) {
             #map { font-size: 10px; letter-spacing: 1px; }
             #side-panel { width: 100%; }
@@ -274,13 +333,35 @@
             <button class="title-btn" id="btn-new">New Game</button>
         </div>
 
+        <!-- Town Screen -->
+        <div id="town-screen">
+            <div class="town-title" id="town-name">焚き火</div>
+            <div class="soul-bar">
+                <span class="c-flame">魂: <span id="town-souls">0</span></span> |
+                <span class="c-gray">捧げた魂: <span id="town-offered">0</span></span> |
+                <span class="c-cyan">次のレベル: <span id="town-next">50</span></span>
+            </div>
+            <div class="npc-dialogue" id="npc-dialogue"></div>
+            <div class="town-menu">
+                <button class="town-btn" id="btn-dungeon">ダンジョンへ</button>
+                <button class="town-btn" id="btn-offer-souls">魂を捧げる</button>
+                <button class="town-btn" id="btn-stash" disabled>保管箱</button>
+                <button class="town-btn" id="btn-shop" disabled>商人</button>
+                <button class="town-btn" id="btn-recover" disabled>装備回収</button>
+                <button class="town-btn" id="btn-town-inv">持ち物</button>
+                <button class="town-btn" id="btn-town-status">ステータス</button>
+                <button class="town-btn" id="btn-town-save">セーブ</button>
+            </div>
+        </div>
+
         <!-- Game Screen -->
         <div id="game-screen" style="display:none;">
             <div id="header">
+                <span class="stat"><span id="dungeon-name">深淵</span> B<span id="floor">1</span>F</span>
                 <span class="stat">Lv.<span id="level">1</span></span>
                 <span class="stat">HP: <span class="hp-bar"><span class="hp-fill" id="hp-bar"></span></span> <span id="hp">50</span>/<span id="max-hp">50</span></span>
                 <span class="stat c-rare">G: <span id="gold">0</span></span>
-                <span class="stat c-cyan">B<span id="floor">1</span>F</span>
+                <span class="stat c-flame">魂: <span id="souls">0</span></span>
             </div>
             <div id="main-area">
                 <div id="map-container">
@@ -306,6 +387,7 @@
                     <button class="action-btn" id="btn-inventory">Bag</button>
                     <button class="action-btn" id="btn-status">Status</button>
                     <button class="action-btn" id="btn-stairs">Stairs</button>
+                    <button class="action-btn flame" id="btn-return-town">帰還</button>
                     <button class="action-btn" id="btn-save">Save</button>
                 </div>
             </div>
@@ -340,6 +422,33 @@
         </div>
     </div>
 
+    <!-- Dungeon Select Modal -->
+    <div class="modal" id="dungeon-modal">
+        <div class="modal-content">
+            <div class="modal-title">ダンジョン選択</div>
+            <ul class="dungeon-list" id="dungeon-list"></ul>
+            <button class="close-btn" id="close-dungeon">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Offer Souls Modal -->
+    <div class="modal" id="offer-modal">
+        <div class="modal-content">
+            <div class="modal-title">魂を捧げる</div>
+            <div id="offer-content"></div>
+            <button class="close-btn" id="close-offer">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Recovery Modal -->
+    <div class="modal" id="recovery-modal">
+        <div class="modal-content">
+            <div class="modal-title">装備回収</div>
+            <div id="recovery-content"></div>
+            <button class="close-btn" id="close-recovery">Cancel</button>
+        </div>
+    </div>
+
     <!-- Game Over Modal -->
     <div class="modal" id="gameover-modal">
         <div class="modal-content" style="text-align:center;">
@@ -355,7 +464,44 @@ const MAP_WIDTH = 30;
 const MAP_HEIGHT = 15;
 const ROOM_MIN = 4, ROOM_MAX = 7, MAX_ROOMS = 5;
 
-const TILE = { WALL: '#', FLOOR: '.', STAIRS: '>', PLAYER: '@' };
+const TILE = { WALL: '#', FLOOR: '.', STAIRS: '>', PLAYER: '@', FLAME: '∴' };
+
+// Dungeons
+const DUNGEONS = {
+    0: { name: '深淵', maxFloor: 15, desc: '始まりの闇', dragonFloor: 10 },
+    1: { name: '灼熱の坑道', maxFloor: 50, desc: '炎と溶岩の坑道', dragonFloor: 10 },
+    2: { name: '凍てつく墓所', maxFloor: 99, desc: '永久凍土の墓所', dragonFloor: 10 },
+    3: { name: '虚無の回廊', maxFloor: 1, desc: '終焉の地', bossFloor: true }
+};
+
+// Town levels
+const TOWN_LEVELS = {
+    0: { name: '焚き火', soulReq: 0, features: [] },
+    1: { name: '小さな灯り', soulReq: 50, features: ['soulConvert'] },
+    2: { name: '朽ちた祠', soulReq: 150, features: ['soulConvert', 'stash'] },
+    3: { name: '忘れられた広場', soulReq: 400, features: ['soulConvert', 'stash', 'shop'] },
+    4: { name: '霧の集落', soulReq: 800, features: ['soulConvert', 'stash', 'shop', 'forge'] },
+    5: { name: '目覚めし町', soulReq: 1500, features: ['soulConvert', 'stash', 'shop', 'forge', 'altar'] }
+};
+
+// NPC Dialogue
+const NPC_DIALOGUE = {
+    firstMeeting: `……ああ。迷い込んだのか。ここはそういう場所だ。
+帰り道を探すなら無駄だよ。進めるのは、あの暗がりしかない。
+
+もしあんたが、もっと奥を目指すつもりなら……この場所を育てろ。
+ここが育てば、あんたの足も、少しは長く持つ。`,
+    firstDeath: `……おお、戻ってきたか。
+やはり、そうなったか。向こうは容赦がない。
+
+……ほら、見てみろ。あんたが持っていたもの、いくつかは
+この火が覚えている。魂をくべれば、取り戻せるかもしれない。`,
+    deathReturn: ['……また倒れたか。まあ、そういうもんだ。', '……おお、戻ってきたな。あんたはしぶとい。'],
+    returnEmpty: ['……また来たか。手ぶらか。', '……魂は見つからなかったか。まあ、そういう時もある。'],
+    returnWithSouls: ['……魂を持ってきたか。火にくべるといい。', '……ほう、結構な数だな。火が喜ぶぞ。'],
+    townGrew: ['……変わったな、ここも。昔を思い出す。', '……火が強くなった。何かが目覚め始めている。'],
+    idle: ['……。', '……風が冷たいな。', '……向こうに行くなら、気をつけろ。']
+};
 
 const RARITY = {
     NORMAL: { name: 'Normal', cls: 'c-normal', affixes: 0 },
@@ -379,91 +525,226 @@ const EQUIP_SLOTS = ['helmet','amulet','mainHand','offHand','body','ringL','ring
 const SLOT_NAMES = {helmet:'Head',amulet:'Neck',mainHand:'R.Hand',offHand:'L.Hand',body:'Body',ringL:'L.Ring',ringR:'R.Ring',belt:'Belt',gloves:'Hands',boots:'Feet'};
 
 const EQUIP_TYPES = {
-    sword: { name: 'Sword', slots: ['mainHand','offHand'], bases: [{name:'Short Sword',dmgMin:4,dmgMax:10,reqStr:8},{name:'Long Sword',dmgMin:6,dmgMax:14,reqStr:12}] },
-    dagger: { name: 'Dagger', slots: ['mainHand','offHand'], bases: [{name:'Dagger',dmgMin:2,dmgMax:7,reqDex:6,crit:8}] },
-    bow: { name: 'Bow', slots: ['mainHand'], twoHand: true, bases: [{name:'Short Bow',dmgMin:4,dmgMax:12,reqDex:8},{name:'Long Bow',dmgMin:6,dmgMax:16,reqDex:14}] },
-    staff: { name: 'Staff', slots: ['mainHand'], twoHand: true, bases: [{name:'Staff',dmgMin:5,dmgMax:14,reqInt:10,ltnDmg:4}] },
-    shield: { name: 'Shield', slots: ['offHand'], bases: [{name:'Buckler',armor:10,block:15,reqStr:6},{name:'Kite Shield',armor:20,block:22,reqStr:12}] },
-    helmet: { name: 'Helmet', slots: ['helmet'], bases: [{name:'Leather Cap',armor:5,eva:6,reqDex:4},{name:'Plate Helm',armor:18,reqStr:12}] },
-    body: { name: 'Body Armor', slots: ['body'], bases: [{name:'Leather Armor',armor:12,eva:10,reqDex:6},{name:'Plate Armor',armor:40,reqStr:15}] },
-    gloves: { name: 'Gloves', slots: ['gloves'], bases: [{name:'Leather Gloves',armor:3,eva:4},{name:'Plate Gauntlets',armor:10,reqStr:8}] },
-    boots: { name: 'Boots', slots: ['boots'], bases: [{name:'Leather Boots',armor:3,eva:6},{name:'Plate Greaves',armor:10,reqStr:8}] },
-    belt: { name: 'Belt', slots: ['belt'], bases: [{name:'Leather Belt',armor:2,hp:8},{name:'Heavy Belt',armor:6,hp:18,reqStr:8}] },
-    amulet: { name: 'Amulet', slots: ['amulet'], bases: [{name:'Pendant',hp:10},{name:'Ruby Amulet',hp:5,str:6},{name:'Sapphire Amulet',hp:5,int:6}] },
-    ring: { name: 'Ring', slots: ['ringL','ringR'], bases: [{name:'Iron Ring',hp:6},{name:'Ruby Ring',str:4},{name:'Diamond Ring',crit:5}] }
+    sword: { name: 'Sword', slots: ['mainHand','offHand'], bases: [{name:'ショートソード',dmgMin:4,dmgMax:10,reqStr:8},{name:'ロングソード',dmgMin:6,dmgMax:14,reqStr:12}] },
+    axe: { name: 'Axe', slots: ['mainHand','offHand'], bases: [{name:'ハチェット',dmgMin:5,dmgMax:12,reqStr:10}] },
+    dagger: { name: 'Dagger', slots: ['mainHand','offHand'], bases: [{name:'ダガー',dmgMin:2,dmgMax:7,reqDex:6,crit:8},{name:'スティレット',dmgMin:3,dmgMax:9,reqDex:10,crit:12}] },
+    wand: { name: 'Wand', slots: ['mainHand','offHand'], bases: [{name:'ワンド',dmgMin:2,dmgMax:5,reqInt:8,fireDmg:4},{name:'セプター',dmgMin:3,dmgMax:7,reqInt:12,coldDmg:5}] },
+    greatsword: { name: 'Greatsword', slots: ['mainHand'], twoHand: true, bases: [{name:'グレートソード',dmgMin:10,dmgMax:24,block:8,reqStr:15}] },
+    bow: { name: 'Bow', slots: ['mainHand'], twoHand: true, bases: [{name:'ショートボウ',dmgMin:4,dmgMax:12,reqDex:8},{name:'ロングボウ',dmgMin:6,dmgMax:16,reqDex:14}] },
+    staff: { name: 'Staff', slots: ['mainHand'], twoHand: true, bases: [{name:'スタッフ',dmgMin:5,dmgMax:14,ltnDmg:4,reqInt:10}] },
+    shield: { name: 'Shield', slots: ['offHand'], bases: [{name:'バックラー',armor:10,block:15,reqStr:6},{name:'カイトシールド',armor:20,block:22,reqStr:12}] },
+    quiver: { name: 'Quiver', slots: ['offHand'], bases: [{name:'レザークィヴァー',dex:3,accuracy:5,reqDex:6},{name:'シャープシュータークィヴァー',dex:5,crit:4,accuracy:8,reqDex:10}] },
+    helmet: { name: 'Helmet', slots: ['helmet'], bases: [{name:'レザーキャップ',armor:5,eva:6,reqDex:4},{name:'プレートヘルム',armor:18,reqStr:12}] },
+    body: { name: 'Body Armor', slots: ['body'], bases: [{name:'レザーアーマー',armor:12,eva:10,reqDex:6},{name:'プレートアーマー',armor:40,reqStr:15}] },
+    gloves: { name: 'Gloves', slots: ['gloves'], bases: [{name:'レザーグローブ',armor:3,eva:4},{name:'プレートガントレット',armor:10,reqStr:8}] },
+    boots: { name: 'Boots', slots: ['boots'], bases: [{name:'レザーブーツ',armor:3,eva:6},{name:'プレートグリーヴ',armor:10,reqStr:8}] },
+    belt: { name: 'Belt', slots: ['belt'], bases: [{name:'レザーベルト',armor:2,hp:8},{name:'ヘビーベルト',armor:6,hp:18,reqStr:8}] },
+    amulet: { name: 'Amulet', slots: ['amulet'], bases: [{name:'ペンダント',hp:10},{name:'ルビーアミュレット',hp:5,str:6},{name:'サファイアアミュレット',hp:5,int:6}] },
+    ring: { name: 'Ring', slots: ['ringL','ringR'], bases: [{name:'アイアンリング',hp:6},{name:'ルビーリング',str:4},{name:'ダイヤモンドリング',crit:5}] }
 };
 
 const PREFIXES = [
-    {name:'Sharp ',stats:{dmgMin:2,dmgMax:4}},
-    {name:'Flaming ',stats:{fireDmg:5}},
-    {name:'Icy ',stats:{coldDmg:5}},
-    {name:'Sturdy ',stats:{armor:8}},
-    {name:'Vital ',stats:{hp:15}},
-    {name:'Strong ',stats:{str:5}},
-    {name:'Nimble ',stats:{dex:5}},
-    {name:'Wise ',stats:{int:5}}
+    {name:'鋭い',stats:{dmgMin:2,dmgMax:4}},
+    {name:'炎の',stats:{fireDmg:5}},
+    {name:'氷の',stats:{coldDmg:5}},
+    {name:'雷の',stats:{ltnDmg:5}},
+    {name:'闇の',stats:{darkDmg:5}},
+    {name:'頑丈な',stats:{armor:8}},
+    {name:'活力の',stats:{hp:15}},
+    {name:'力の',stats:{str:5}},
+    {name:'技の',stats:{dex:5}},
+    {name:'知の',stats:{int:5}}
 ];
 const SUFFIXES = [
-    {name:' of Fire Res',stats:{fireRes:12}},
-    {name:' of Cold Res',stats:{coldRes:12}},
-    {name:' of Giants',stats:{str:8}},
-    {name:' of Wind',stats:{dex:8}},
-    {name:' of Precision',stats:{crit:5}},
-    {name:' of Evasion',stats:{eva:10}}
+    {name:'火耐性',stats:{fireRes:12}},
+    {name:'氷耐性',stats:{coldRes:12}},
+    {name:'雷耐性',stats:{ltnRes:12}},
+    {name:'闇耐性',stats:{darkRes:12}},
+    {name:'巨人',stats:{str:8}},
+    {name:'疾風',stats:{dex:8}},
+    {name:'会心',stats:{crit:5}},
+    {name:'回避',stats:{eva:10}},
+    {name:'吸血',stats:{lifeLeech:2}},
+    {name:'狩人',stats:{lifeOnKill:5}}
 ];
 
 const UNIQUES = [
-    {name:'Cursed Dagger',type:'dagger',tier:0,stats:{dmgMin:8,dmgMax:16,crit:20,darkDmg:10},neg:{hp:-15},reqDex:6},
-    {name:'Guardian Shield',type:'shield',tier:0,stats:{armor:25,block:30,hp:20},neg:{},reqStr:8},
-    {name:'Blood Ring',type:'ring',tier:0,stats:{dmgMin:3,dmgMax:6,hpRegen:3},neg:{fireRes:-15}},
-    {name:'Inferno Blade',type:'sword',tier:1,stats:{dmgMin:12,dmgMax:22,fireDmg:25},neg:{coldRes:-20},reqStr:12},
-    {name:'Berserker Helm',type:'helmet',tier:1,stats:{str:15,dmgMin:5,dmgMax:10,critDmg:30},neg:{armor:-10,eva:-10},reqStr:14},
-    {name:'Doom Greatsword',type:'bow',tier:2,stats:{dmgMin:25,dmgMax:50,crit:18,fireDmg:15},neg:{},reqDex:22},
+    {name:'滅びの大剣',type:'greatsword',tier:0,stats:{dmgMin:45,dmgMax:80,crit:15,darkDmg:30},neg:{hp:-50,fireRes:-30},reqStr:20,desc:'振るう者の命をも削る破壊の剣'},
+    {name:'不死王の鎧',type:'body',tier:0,stats:{armor:80,hp:80,darkRes:50,hpRegen:8},neg:{fireRes:-50,ltnRes:-40,eva:-20},reqStr:18},
+    {name:'虚無の指輪',type:'ring',tier:0,stats:{dmgMin:10,dmgMax:20,darkDmg:25,crit:20},neg:{hp:-40,coldRes:-30}},
+    {name:'業火の剣',type:'sword',tier:1,stats:{dmgMin:15,dmgMax:28,fireDmg:35},neg:{coldRes:-30},reqStr:12},
+    {name:'氷結の杖',type:'staff',tier:1,stats:{dmgMin:10,dmgMax:22,coldDmg:40,int:12},neg:{fireRes:-35},reqInt:14},
+    {name:'狂戦士の兜',type:'helmet',tier:1,stats:{str:18,dmgMin:6,dmgMax:12,critDmg:35},neg:{armor:-15,eva:-15},reqStr:12},
+    {name:'呪われた短剣',type:'dagger',tier:1,stats:{dmgMin:10,dmgMax:20,crit:25,darkDmg:15},neg:{hp:-25},reqDex:10},
+    {name:'竜殺しの弓',type:'bow',tier:2,stats:{dmgMin:20,dmgMax:40,crit:15,fireDmg:20},neg:{armor:-10},reqDex:15},
+    {name:'全知の指輪',type:'ring',tier:2,stats:{int:15,fireDmg:12,coldDmg:12,ltnDmg:12},neg:{str:-5},reqInt:12},
+    {name:'疾風のブーツ',type:'boots',tier:2,stats:{eva:20,dex:10},neg:{armor:-8}},
+    {name:'血の指輪',type:'ring',tier:2,stats:{dmgMin:5,dmgMax:10,hpRegen:5},neg:{fireRes:-15}},
+    {name:'守護者の盾',type:'shield',tier:3,stats:{armor:20,block:25,hp:15},neg:{},reqStr:10},
+    {name:'旅人のベルト',type:'belt',tier:3,stats:{hp:20,goldFind:15,eva:8},neg:{}},
 ];
-const UNIQUE_TIER_FLOORS = {0:1,1:5,2:10};
+const UNIQUE_TIER_FLOORS = {0:1,1:1,2:5,3:10,4:20};
 
 const SETS = {
-    "Hero's Legacy": {
+    "勇者の遺産": {
         pieces: {
-            "Hero's Sword": {type:'sword',stats:{dmgMin:15,dmgMax:28,str:5},reqStr:14},
-            "Hero's Shield": {type:'shield',stats:{armor:35,block:25,hp:15},reqStr:12},
-            "Hero's Helm": {type:'helmet',stats:{armor:22,hp:20,fireRes:10},reqStr:10},
-            "Hero's Armor": {type:'body',stats:{armor:50,hp:30},reqStr:16}
+            "勇者の剣": {type:'sword',stats:{dmgMin:15,dmgMax:28,str:5},reqStr:14},
+            "勇者の盾": {type:'shield',stats:{armor:35,block:25,hp:15},reqStr:12},
+            "勇者の兜": {type:'helmet',stats:{armor:22,hp:20,fireRes:10},reqStr:10},
+            "勇者の鎧": {type:'body',stats:{armor:50,hp:30},reqStr:16}
         },
         bonuses: {2:{str:10,hp:20},3:{dmgMin:5,dmgMax:10,armor:15},4:{crit:10,fireRes:20,coldRes:20}}
+    },
+    "影の装束": {
+        pieces: {
+            "影のダガー": {type:'dagger',stats:{dmgMin:8,dmgMax:18,crit:12,darkDmg:8},reqDex:12},
+            "影のフード": {type:'helmet',stats:{armor:10,eva:20,dex:5},reqDex:10},
+            "影のローブ": {type:'body',stats:{armor:20,eva:30,darkRes:15},reqDex:14},
+            "影のブーツ": {type:'boots',stats:{armor:8,eva:25,dex:4},reqDex:8}
+        },
+        bonuses: {2:{dex:10,eva:15},3:{crit:8,darkRes:25},4:{critDmg:50,darkDmg:15}}
+    },
+    "賢者の叡智": {
+        pieces: {
+            "賢者の杖": {type:'staff',stats:{dmgMin:10,dmgMax:22,fireDmg:12,coldDmg:12,ltnDmg:12},reqInt:16},
+            "賢者の冠": {type:'helmet',stats:{armor:12,int:8,hp:15},reqInt:12},
+            "賢者のローブ": {type:'body',stats:{armor:25,int:6,fireRes:12,coldRes:12},reqInt:14},
+            "賢者の指輪": {type:'ring',stats:{int:10,ltnRes:15}}
+        },
+        bonuses: {2:{int:12,hp:15},3:{fireDmg:10,coldDmg:10,ltnDmg:10},4:{fireRes:25,coldRes:25,ltnRes:25}}
     }
 };
 const SET_MIN_FLOOR = 8;
 
-const ENEMIES = [
-    {name:'Slime',char:'s',hp:15,atkMin:2,atkMax:5,armor:0,exp:8,gold:5},
-    {name:'Goblin',char:'g',hp:28,atkMin:5,atkMax:12,armor:4,exp:18,gold:14},
-    {name:'Orc',char:'o',hp:55,atkMin:10,atkMax:22,armor:10,exp:40,gold:30},
-    {name:'Skeleton',char:'k',hp:40,atkMin:8,atkMax:16,armor:6,exp:30,gold:22,coldDmg:6},
-    {name:'Dragon',char:'D',hp:180,atkMin:25,atkMax:50,armor:35,exp:200,gold:200,fireDmg:30}
+// Enemies by dungeon
+const ENEMIES_ABYSS = [
+    {name:'スライム',char:'s',hp:15,atkMin:2,atkMax:5,armor:0,exp:8,gold:5,soul:1,minFloor:1,maxFloor:5},
+    {name:'ゴブリン',char:'g',hp:28,atkMin:5,atkMax:12,armor:4,exp:18,gold:14,soul:2,minFloor:3},
+    {name:'オーク',char:'o',hp:55,atkMin:10,atkMax:22,armor:10,exp:40,gold:30,soul:4,minFloor:6},
+    {name:'スケルトン',char:'k',hp:70,atkMin:12,atkMax:20,armor:8,exp:55,gold:40,soul:5,minFloor:9},
+    {name:'ドラゴン',char:'D',hp:180,atkMin:25,atkMax:50,fireDmg:35,armor:35,exp:200,gold:200,soul:20,minFloor:10}
 ];
+const ENEMIES_INFERNO = [
+    {name:'スライム',char:'s',hp:15,atkMin:2,atkMax:5,armor:0,exp:8,gold:5,soul:1,minFloor:1,maxFloor:10},
+    {name:'ゴブリン',char:'g',hp:28,atkMin:5,atkMax:12,armor:4,exp:18,gold:14,soul:2,minFloor:1},
+    {name:'インプ',char:'i',hp:32,atkMin:4,atkMax:10,fireDmg:12,armor:2,exp:25,gold:18,soul:3,minFloor:5},
+    {name:'オーク',char:'o',hp:55,atkMin:10,atkMax:22,armor:10,exp:40,gold:30,soul:4,minFloor:8},
+    {name:'ファイアビートル',char:'b',hp:45,atkMin:8,atkMax:16,fireDmg:15,armor:12,exp:50,gold:35,soul:4,minFloor:12},
+    {name:'溶岩ゴーレム',char:'G',hp:120,atkMin:18,atkMax:35,fireDmg:25,armor:25,exp:100,gold:80,soul:8,minFloor:25},
+    {name:'炎の精霊',char:'E',hp:80,atkMin:12,atkMax:22,fireDmg:35,armor:5,exp:90,gold:70,soul:7,minFloor:32},
+    {name:'ファイアデーモン',char:'F',hp:150,atkMin:22,atkMax:40,fireDmg:40,armor:20,exp:150,gold:120,soul:12,minFloor:40},
+    {name:'炎竜',char:'D',hp:250,atkMin:35,atkMax:65,fireDmg:50,armor:40,exp:300,gold:250,soul:25,minFloor:45}
+];
+const ENEMIES_FROZEN = [
+    {name:'スライム',char:'s',hp:15,atkMin:2,atkMax:5,armor:0,exp:8,gold:5,soul:1,minFloor:1,maxFloor:15},
+    {name:'ゴブリン',char:'g',hp:28,atkMin:5,atkMax:12,armor:4,exp:18,gold:14,soul:2,minFloor:1},
+    {name:'ワイト',char:'w',hp:38,atkMin:6,atkMax:14,darkDmg:10,armor:4,exp:30,gold:22,soul:3,minFloor:5},
+    {name:'フロストスパイダー',char:'a',hp:42,atkMin:7,atkMax:15,coldDmg:14,armor:3,exp:45,gold:32,soul:4,minFloor:18},
+    {name:'ストームエレメンタル',char:'e',hp:55,atkMin:8,atkMax:16,ltnDmg:20,armor:5,exp:65,gold:50,soul:5,minFloor:28},
+    {name:'アイスゴーレム',char:'I',hp:130,atkMin:16,atkMax:32,coldDmg:28,armor:28,exp:110,gold:85,soul:8,minFloor:38},
+    {name:'リッチ',char:'L',hp:100,atkMin:15,atkMax:28,coldDmg:18,darkDmg:18,armor:12,exp:130,gold:100,soul:10,minFloor:48},
+    {name:'フロストジャイアント',char:'J',hp:200,atkMin:28,atkMax:50,coldDmg:35,armor:30,exp:180,gold:150,soul:15,minFloor:62},
+    {name:'シェイド',char:'S',hp:90,atkMin:18,atkMax:32,darkDmg:40,armor:8,exp:160,gold:130,soul:12,minFloor:68},
+    {name:'死霊竜',char:'N',hp:280,atkMin:38,atkMax:70,coldDmg:30,darkDmg:30,armor:38,exp:350,gold:300,soul:28,minFloor:88},
+    {name:'古竜',char:'D',hp:400,atkMin:50,atkMax:90,fireDmg:40,coldDmg:40,armor:50,exp:500,gold:500,soul:40,minFloor:10}
+];
+const FINAL_BOSS = {name:'虚無の王',char:'Ω',hp:5000,atkMin:80,atkMax:150,fireDmg:50,coldDmg:50,ltnDmg:40,darkDmg:60,armor:100,exp:10000,gold:10000,soul:500};
+const DUNGEON_ENEMIES = {0: ENEMIES_ABYSS, 1: ENEMIES_INFERNO, 2: ENEMIES_FROZEN};
 
 // ==================== GAME STATE ====================
 let game = null;
 let selectedItemIdx = -1;
+
+class Town {
+    constructor() {
+        this.level = 0;
+        this.totalSoulsOffered = 0;
+        this.firstVisit = true;
+        this.stash = [];
+    }
+
+    getLevelInfo() { return TOWN_LEVELS[this.level] || TOWN_LEVELS[0]; }
+    getNextLevelInfo() { return this.level >= 5 ? null : TOWN_LEVELS[this.level + 1]; }
+    soulsToNextLevel() {
+        const next = this.getNextLevelInfo();
+        return next ? Math.max(0, next.soulReq - this.totalSoulsOffered) : 0;
+    }
+    offerSouls(amount) {
+        this.totalSoulsOffered += amount;
+        let leveledUp = false;
+        for (let lv = 0; lv <= 5; lv++) {
+            if (lv > this.level && this.totalSoulsOffered >= TOWN_LEVELS[lv].soulReq) {
+                this.level = lv;
+                leveledUp = true;
+            }
+        }
+        return leveledUp;
+    }
+    hasFeature(f) { return this.getLevelInfo().features.includes(f); }
+    toJSON() { return { level: this.level, totalSoulsOffered: this.totalSoulsOffered, firstVisit: this.firstVisit, stash: this.stash }; }
+    static fromJSON(d) {
+        const t = new Town();
+        t.level = d.level || 0;
+        t.totalSoulsOffered = d.totalSoulsOffered || 0;
+        t.firstVisit = d.firstVisit !== false;
+        t.stash = d.stash || [];
+        return t;
+    }
+}
 
 class Game {
     constructor() {
         this.player = null;
         this.dungeon = null;
         this.floor = 1;
+        this.dungeonId = 0;
+        this.town = new Town();
+        this.inTown = false;
         this.messages = [];
         this.gameOver = false;
+        this.dungeonsCleared = [];
+        this.highestFloors = {0:1,1:1,2:1,3:1};
+        this.lostEquipment = [];
+        this.deathCount = 0;
+        this.tombDeepCleared = false;
+        this.liberationEnd = false;
     }
+
+    getDungeonInfo() { return DUNGEONS[this.dungeonId] || DUNGEONS[0]; }
+    isDeepMode() { return this.dungeonId === 2 && this.dungeonsCleared.includes(2); }
 
     start() {
         this.player = new Player();
         this.floor = 1;
+        this.dungeonId = 0;
+        this.town = new Town();
+        this.inTown = true;
+        this.dungeonsCleared = [];
+        this.highestFloors = {0:1,1:1,2:1,3:1};
+        this.lostEquipment = [];
+        this.deathCount = 0;
+        this.tombDeepCleared = false;
+        this.liberationEnd = false;
+        this.msg('青い炎の前に立っている……');
+    }
+
+    enterDungeon(dungeonId) {
+        this.dungeonId = dungeonId;
+        this.floor = 1;
+        this.inTown = false;
         this.dungeon = new Dungeon();
-        this.dungeon.generate(this.floor);
+        this.dungeon.generate(this.floor, this.dungeonId, this.isDeepMode());
         this.player.x = this.dungeon.startX;
         this.player.y = this.dungeon.startY;
-        this.msg('Welcome to the dungeon!');
+        this.player.hp = this.player.getStats().maxHp;
+        this.msg(`『${this.getDungeonInfo().name}』に足を踏み入れた`);
+        this.save();
+    }
+
+    returnToTown() {
+        this.inTown = true;
+        this.player.hp = this.player.getStats().maxHp;
+        this.msg('町に戻った。HPが回復した。');
         this.save();
     }
 
@@ -473,7 +754,7 @@ class Game {
     }
 
     move(dx, dy) {
-        if (this.gameOver) return;
+        if (this.gameOver || this.inTown) return;
         const nx = this.player.x + dx;
         const ny = this.player.y + dy;
 
@@ -490,7 +771,7 @@ class Game {
             const item = this.dungeon.itemAt(nx, ny);
             if (item) this.pickup(item);
             if (nx === this.dungeon.stairsX && ny === this.dungeon.stairsY) {
-                this.msg('Stairs found! Tap [Stairs] to descend.', 'c-cyan');
+                this.msg('階段発見！[Stairs]で次へ', 'c-cyan');
             }
             this.enemyTurn();
         }
@@ -499,14 +780,16 @@ class Game {
     pickup(item) {
         this.dungeon.items = this.dungeon.items.filter(i => i !== item);
         if (item.type === 'gold') {
-            this.player.gold += item.amount;
-            this.msg(`+${item.amount}G`, 'c-rare');
+            const stats = this.player.getStats();
+            const amt = Math.floor(item.amount * (1 + (stats.goldFind || 0) / 100));
+            this.player.gold += amt;
+            this.msg(`+${amt}G`, 'c-rare');
         } else if (item.type === 'potion') {
             if (this.player.inventory.length < 20) {
                 this.player.inventory.push(item);
-                this.msg('Potion acquired!', 'c-legend');
+                this.msg('回復薬入手！', 'c-legend');
             } else {
-                this.msg('Inventory full!', 'c-red');
+                this.msg('持ち物満杯！', 'c-red');
                 this.dungeon.items.push(item);
             }
         } else if (item.type === 'equip') {
@@ -514,7 +797,7 @@ class Game {
                 this.player.inventory.push(item);
                 this.msg(`${item.equip.name}`, RARITY[item.equip.rarity].cls);
             } else {
-                this.msg('Inventory full!', 'c-red');
+                this.msg('持ち物満杯！', 'c-red');
                 this.dungeon.items.push(item);
             }
         }
@@ -522,22 +805,70 @@ class Game {
 
     combat(enemy) {
         const stats = this.player.getStats();
+
+        // Hit check
+        if (randInt(1, 100) > (stats.accuracy || 80)) {
+            this.msg(`MISS! ${enemy.name}`, 'c-gray');
+            return;
+        }
+
         let dmg = randInt(stats.dmgMin, stats.dmgMax);
+        dmg = Math.floor(dmg * (100 + (stats.physDmgInc || 0)) / 100);
         const crit = randInt(1, 100) <= stats.crit;
         if (crit) dmg = Math.floor(dmg * stats.critDmg / 100);
         dmg = Math.max(1, dmg - Math.floor(enemy.armor / 2));
-        const elem = stats.fireDmg + stats.coldDmg + stats.ltnDmg + stats.darkDmg;
+
+        const fireDmg = Math.floor((stats.fireDmg || 0) * (100 + (stats.fireDmgInc || 0)) / 100);
+        const coldDmg = Math.floor((stats.coldDmg || 0) * (100 + (stats.coldDmgInc || 0)) / 100);
+        const ltnDmg = Math.floor((stats.ltnDmg || 0) * (100 + (stats.ltnDmgInc || 0)) / 100);
+        const elem = fireDmg + coldDmg + ltnDmg + (stats.darkDmg || 0);
         const total = dmg + elem;
         enemy.hp -= total;
-        this.msg(`${crit?'CRIT! ':''}${enemy.name}: ${total}dmg`, crit?'c-rare':'');
+        this.msg(`${crit?'CRIT! ':''}${enemy.name}に${total}dmg`, crit?'c-rare':'');
+
+        // Life leech
+        if (stats.lifeLeech > 0 && dmg > 0) {
+            const leech = Math.max(1, Math.floor(dmg * stats.lifeLeech / 100));
+            this.player.hp = Math.min(stats.maxHp, this.player.hp + leech);
+        }
 
         if (enemy.hp <= 0) {
-            this.player.exp += enemy.exp;
-            this.player.gold += enemy.gold;
-            this.msg(`+${enemy.exp}EXP +${enemy.gold}G`, 'c-green');
+            const expBonus = stats.expBonus || 0;
+            const exp = Math.floor(enemy.exp * (1 + expBonus / 100));
+            this.player.exp += exp;
+            this.player.gold += Math.floor(enemy.gold * (1 + (stats.goldFind || 0) / 100));
+            this.player.souls += enemy.soul;
+            this.msg(`+${exp}EXP +${enemy.soul}魂`, 'c-green');
             this.dungeon.enemies = this.dungeon.enemies.filter(e => e !== enemy);
+
+            // Life on kill
+            if (stats.lifeOnKill > 0) {
+                this.player.hp = Math.min(stats.maxHp, this.player.hp + stats.lifeOnKill);
+            }
+
             this.checkLevelUp();
+
+            // Final boss check
+            if (enemy.name === FINAL_BOSS.name) {
+                this.triggerLiberationEnd();
+            }
         }
+    }
+
+    triggerLiberationEnd() {
+        this.liberationEnd = true;
+        this.gameOver = true;
+        localStorage.removeItem('dungeonSave');
+        document.getElementById('gameover-title').textContent = '★★★ 解放END ★★★';
+        document.getElementById('gameover-msg').innerHTML = `
+            虚無の王が崩れ落ちる……<br><br>
+            長い沈黙の後、闇が薄れていく。<br>
+            どこか遠くで、光が見えた気がした。<br><br>
+            レベル: ${this.player.level}<br>
+            死亡回数: ${this.deathCount}<br>
+            町の発展: ${this.town.getLevelInfo().name}
+        `;
+        document.getElementById('gameover-modal').classList.add('active');
     }
 
     checkLevelUp() {
@@ -546,6 +877,7 @@ class Game {
             this.player.level++;
             this.player.expNext = Math.floor(this.player.expNext * 1.3);
             this.player.baseHp += 10;
+            this.player.statPoints += 5;
             this.player.hp = this.player.getStats().maxHp;
             this.msg(`Level UP! Lv.${this.player.level}`, 'c-rare');
         }
@@ -556,17 +888,18 @@ class Game {
         for (const e of this.dungeon.enemies) {
             const dist = Math.abs(e.x - this.player.x) + Math.abs(e.y - this.player.y);
             if (dist === 1) {
-                if (randInt(1,100) <= stats.eva) { this.msg(`Evaded ${e.name}!`,'c-green'); continue; }
-                if (randInt(1,100) <= stats.block) { this.msg(`Blocked ${e.name}!`,'c-cyan'); continue; }
+                if (randInt(1,100) <= stats.eva) { this.msg(`${e.name}回避！`,'c-green'); continue; }
+                if (randInt(1,100) <= stats.block) { this.msg(`${e.name}ブロック！`,'c-cyan'); continue; }
                 let phys = Math.max(1, randInt(e.atkMin, e.atkMax) - Math.floor(stats.armor/3));
-                let elem = Math.floor((e.fireDmg||0)*(100-stats.fireRes)/100) + Math.floor((e.coldDmg||0)*(100-stats.coldRes)/100);
-                let total = phys + elem;
+                let elemFire = Math.floor((e.fireDmg||0)*(100-stats.fireRes)/100);
+                let elemCold = Math.floor((e.coldDmg||0)*(100-stats.coldRes)/100);
+                let elemLtn = Math.floor((e.ltnDmg||0)*(100-stats.ltnRes)/100);
+                let elemDark = Math.floor((e.darkDmg||0)*(100-stats.darkRes)/100);
+                let total = phys + elemFire + elemCold + elemLtn + elemDark;
                 this.player.hp -= total;
-                this.msg(`${e.name}: ${total}dmg to you!`, 'c-red');
+                this.msg(`${e.name}から${total}dmg！`, 'c-red');
                 if (this.player.hp <= 0) {
-                    this.gameOver = true;
-                    this.msg('You died...', 'c-red');
-                    localStorage.removeItem('dungeonSave');
+                    this.handleDeath();
                     return;
                 }
             } else if (dist <= 6) {
@@ -580,22 +913,85 @@ class Game {
         }
     }
 
+    handleDeath() {
+        this.deathCount++;
+
+        // Save lost equipment
+        this.lostEquipment = [];
+        for (const slot of EQUIP_SLOTS) {
+            if (this.player.equipment[slot]) {
+                this.lostEquipment.push({...this.player.equipment[slot]});
+            }
+        }
+        for (const item of this.player.inventory) {
+            if (item.type === 'equip') {
+                this.lostEquipment.push({...item.equip});
+            }
+        }
+
+        // Reset player but keep level/stats
+        const level = this.player.level;
+        const exp = this.player.exp;
+        const expNext = this.player.expNext;
+        const statPoints = this.player.statPoints;
+        const baseStr = this.player.baseStr;
+        const baseDex = this.player.baseDex;
+        const baseInt = this.player.baseInt;
+        const baseHp = this.player.baseHp;
+        const gold = Math.floor(this.player.gold / 2);
+        const souls = this.player.souls;
+
+        this.player = new Player();
+        this.player.level = level;
+        this.player.exp = exp;
+        this.player.expNext = expNext;
+        this.player.statPoints = statPoints;
+        this.player.baseStr = baseStr;
+        this.player.baseDex = baseDex;
+        this.player.baseInt = baseInt;
+        this.player.baseHp = baseHp;
+        this.player.gold = gold;
+        this.player.souls = souls;
+        this.player.hp = this.player.getStats().maxHp;
+
+        this.floor = 1;
+        this.inTown = true;
+        this.msg('倒れた……町に戻された', 'c-red');
+        this.save();
+    }
+
     descend() {
-        if (this.player.x !== this.dungeon.stairsX || this.player.y !== this.dungeon.stairsY) {
-            this.msg('Not on stairs!', 'c-red');
+        if (!this.dungeon || this.player.x !== this.dungeon.stairsX || this.player.y !== this.dungeon.stairsY) {
+            this.msg('階段の上にいない！', 'c-red');
             return;
         }
+
+        const info = this.getDungeonInfo();
         this.floor++;
-        if (this.floor > 15) {
-            this.gameOver = true;
-            this.msg('VICTORY! You cleared the dungeon!', 'c-rare');
-            localStorage.removeItem('dungeonSave');
+
+        // Dungeon clear check
+        if (this.floor > info.maxFloor) {
+            if (!this.dungeonsCleared.includes(this.dungeonId)) {
+                this.dungeonsCleared.push(this.dungeonId);
+            }
+
+            if (this.dungeonId === 2 && this.dungeonsCleared.includes(2)) {
+                this.tombDeepCleared = true;
+            }
+
+            this.msg(`『${info.name}』踏破！`, 'c-green');
+            this.floor = 1;
+            this.inTown = true;
+            this.player.hp = this.player.getStats().maxHp;
+            this.save();
             return;
         }
+
         this.dungeon = new Dungeon();
-        this.dungeon.generate(this.floor);
+        this.dungeon.generate(this.floor, this.dungeonId, this.isDeepMode());
         this.player.x = this.dungeon.startX;
         this.player.y = this.dungeon.startY;
+        this.highestFloors[this.dungeonId] = Math.max(this.highestFloors[this.dungeonId] || 1, this.floor);
         this.msg(`--- B${this.floor}F ---`, 'c-cyan');
         this.save();
     }
@@ -603,9 +999,18 @@ class Game {
     save() {
         const data = {
             floor: this.floor,
+            dungeonId: this.dungeonId,
+            dungeonsCleared: this.dungeonsCleared,
+            highestFloors: this.highestFloors,
             player: this.player.toJSON(),
-            dungeon: this.dungeon.toJSON(),
-            messages: this.messages
+            dungeon: this.dungeon ? this.dungeon.toJSON() : null,
+            town: this.town.toJSON(),
+            inTown: this.inTown,
+            messages: this.messages,
+            lostEquipment: this.lostEquipment,
+            deathCount: this.deathCount,
+            tombDeepCleared: this.tombDeepCleared,
+            liberationEnd: this.liberationEnd
         };
         localStorage.setItem('dungeonSave', JSON.stringify(data));
     }
@@ -616,9 +1021,20 @@ class Game {
         try {
             const data = JSON.parse(raw);
             this.floor = data.floor;
+            this.dungeonId = data.dungeonId || 0;
+            this.dungeonsCleared = data.dungeonsCleared || [];
+            this.highestFloors = data.highestFloors || {0:1,1:1,2:1,3:1};
             this.player = Player.fromJSON(data.player);
-            this.dungeon = Dungeon.fromJSON(data.dungeon);
+            this.town = Town.fromJSON(data.town || {});
+            this.inTown = data.inTown !== false;
             this.messages = data.messages || [];
+            this.lostEquipment = data.lostEquipment || [];
+            this.deathCount = data.deathCount || 0;
+            this.tombDeepCleared = data.tombDeepCleared || false;
+            this.liberationEnd = data.liberationEnd || false;
+            if (data.dungeon && !this.inTown) {
+                this.dungeon = Dungeon.fromJSON(data.dungeon);
+            }
             return true;
         } catch(e) { return false; }
     }
@@ -629,9 +1045,11 @@ class Player {
     constructor() {
         this.x = 0; this.y = 0;
         this.level = 1; this.exp = 0; this.expNext = 30;
+        this.statPoints = 0;
         this.baseStr = 10; this.baseDex = 10; this.baseInt = 10;
         this.baseHp = 50; this.hp = 50;
         this.gold = 0;
+        this.souls = 0;
         this.equipment = {};
         this.inventory = [];
     }
@@ -642,7 +1060,10 @@ class Player {
             maxHp: this.baseHp, dmgMin: 2, dmgMax: 5,
             fireDmg: 0, coldDmg: 0, ltnDmg: 0, darkDmg: 0,
             crit: 5, critDmg: 150, armor: 0, eva: 0, block: 0,
-            fireRes: 0, coldRes: 0, ltnRes: 0, darkRes: 0, hpRegen: 0
+            fireRes: 0, coldRes: 0, ltnRes: 0, darkRes: 0, hpRegen: 0,
+            accuracy: 80, lifeLeech: 0, lifeOnKill: 0,
+            physDmgInc: 0, fireDmgInc: 0, coldDmgInc: 0, ltnDmgInc: 0,
+            goldFind: 0, expBonus: 0
         };
 
         for (const slot of EQUIP_SLOTS) {
@@ -650,7 +1071,8 @@ class Player {
             if (eq) {
                 const total = eq.getTotalStats();
                 for (const k in total) {
-                    if (k in s) s[k] += total[k];
+                    const mapped = statKeyMap(k);
+                    if (mapped in s) s[mapped] += total[k];
                 }
             }
         }
@@ -682,6 +1104,8 @@ class Player {
         s.coldRes = Math.min(75, s.coldRes);
         s.ltnRes = Math.min(75, s.ltnRes);
         s.darkRes = Math.min(75, s.darkRes);
+        s.eva = Math.min(75, s.eva);
+        s.block = Math.min(75, s.block);
 
         return s;
     }
@@ -718,8 +1142,9 @@ class Player {
         }
         return {
             x: this.x, y: this.y, level: this.level, exp: this.exp, expNext: this.expNext,
+            statPoints: this.statPoints,
             baseStr: this.baseStr, baseDex: this.baseDex, baseInt: this.baseInt,
-            baseHp: this.baseHp, hp: this.hp, gold: this.gold,
+            baseHp: this.baseHp, hp: this.hp, gold: this.gold, souls: this.souls,
             equipment: eq,
             inventory: this.inventory.map(i => i.type === 'equip' ? {type:'equip',equip:i.equip.toJSON()} : i)
         };
@@ -728,7 +1153,9 @@ class Player {
     static fromJSON(d) {
         const p = new Player();
         Object.assign(p, {x:d.x,y:d.y,level:d.level,exp:d.exp,expNext:d.expNext,
-            baseStr:d.baseStr,baseDex:d.baseDex,baseInt:d.baseInt,baseHp:d.baseHp,hp:d.hp,gold:d.gold});
+            statPoints:d.statPoints||0,
+            baseStr:d.baseStr,baseDex:d.baseDex,baseInt:d.baseInt,baseHp:d.baseHp,hp:d.hp,
+            gold:d.gold,souls:d.souls||0});
         for (const slot of EQUIP_SLOTS) {
             p.equipment[slot] = d.equipment[slot] ? Equipment.fromJSON(d.equipment[slot]) : null;
         }
@@ -769,9 +1196,19 @@ class Equipment {
         const tierName = TIER[this.tier].name;
         let name = tierName + this.baseName;
         for (const p of this.prefixes) name = p.name + name;
-        for (const s of this.suffixes) name = name + s.name;
+        for (const s of this.suffixes) name = name + 'の' + s.name;
         return name;
     }
+
+    calcScore() {
+        const rarityMult = {NORMAL:1,MAGIC:2,RARE:4,UNIQUE:10,LEGEND:15,SET:12}[this.rarity] || 1;
+        const tierMult = {CRUDE:0.5,COMMON:1,FINE:1.5,MASTERWORK:2.5,SUPREME:4}[this.tier] || 1;
+        const stats = this.getTotalStats();
+        const statSum = Object.values(stats).reduce((a,b) => a + Math.abs(b), 0);
+        return Math.max(5, Math.floor((10 + statSum / 2) * rarityMult * tierMult));
+    }
+
+    calcRecoveryCost() { return Math.max(5, Math.floor(this.calcScore() * 1.5)); }
 
     toJSON() {
         return {
@@ -790,7 +1227,7 @@ class Equipment {
     }
 }
 
-function generateEquipment(floor) {
+function generateEquipment(floor, dungeonId = 0) {
     const roll = Math.random();
     let rarity;
     if (roll < 0.45) rarity = 'NORMAL';
@@ -808,7 +1245,9 @@ function generateEquipment(floor) {
         const pieceNames = Object.keys(set.pieces);
         const pieceName = pieceNames[randInt(0, pieceNames.length-1)];
         const piece = set.pieces[pieceName];
-        return new Equipment(pieceName, pieceName, piece.type, 'SET', 'COMMON', {...piece.stats}, piece.reqStr||0, piece.reqDex||0, piece.reqInt||0, setName);
+        const eq = new Equipment(pieceName, pieceName, piece.type, 'SET', 'COMMON', {...piece.stats}, piece.reqStr||0, piece.reqDex||0, piece.reqInt||0, setName);
+        addAffixes(eq, 3, 3, floor);
+        return eq;
     }
     if (rarity === 'SET') rarity = 'LEGEND';
 
@@ -820,13 +1259,15 @@ function generateEquipment(floor) {
             const u = weightedRandom(available, weights);
             const stats = {...u.stats};
             if (u.neg) for (const k in u.neg) stats[k] = (stats[k]||0) + u.neg[k];
-            return new Equipment(u.name, u.name, u.type, 'UNIQUE', 'COMMON', stats, u.reqStr||0, u.reqDex||0, u.reqInt||0);
+            const eq = new Equipment(u.name, u.name, u.type, 'UNIQUE', 'COMMON', stats, u.reqStr||0, u.reqDex||0, u.reqInt||0);
+            addAffixes(eq, 3, 3, floor);
+            return eq;
         }
         rarity = 'RARE';
     }
 
     // Legend
-    if (rarity === 'LEGEND') {
+    if (rarity === 'LEGEND' && floor >= 8) {
         const types = Object.keys(EQUIP_TYPES);
         const type = types[randInt(0, types.length-1)];
         const bases = EQUIP_TYPES[type].bases;
@@ -843,6 +1284,7 @@ function generateEquipment(floor) {
         eq.name = eq.getFullName();
         return eq;
     }
+    if (rarity === 'LEGEND') rarity = 'RARE';
 
     // Normal/Magic/Rare
     const types = Object.keys(EQUIP_TYPES);
@@ -916,7 +1358,7 @@ class Dungeon {
         this.startX = 0; this.startY = 0;
     }
 
-    generate(floor) {
+    generate(floor, dungeonId = 0, deepMode = false) {
         this.tiles = Array(MAP_HEIGHT).fill(null).map(() => Array(MAP_WIDTH).fill(TILE.WALL));
         this.enemies = [];
         this.items = [];
@@ -966,15 +1408,46 @@ class Dungeon {
             this.tiles[this.stairsY][this.stairsX] = TILE.STAIRS;
         }
 
-        // Spawn enemies
-        for (let i = 1; i < rooms.length; i++) {
-            const r = rooms[i];
-            const count = randInt(1, 3);
-            for (let j = 0; j < count; j++) {
-                const ex = randInt(r.x1+1, r.x2-1);
-                const ey = randInt(r.y1+1, r.y2-1);
-                if (!this.enemyAt(ex, ey)) {
-                    this.enemies.push(this.createEnemy(ex, ey, floor));
+        // Boss floor
+        const info = DUNGEONS[dungeonId];
+        if (info && info.bossFloor) {
+            if (rooms.length >= 2) {
+                const bossRoom = rooms[rooms.length-1];
+                const bx = Math.floor((bossRoom.x1+bossRoom.x2)/2);
+                const by = Math.floor((bossRoom.y1+bossRoom.y2)/2);
+                this.enemies.push({...FINAL_BOSS, x: bx, y: by, hp: FINAL_BOSS.hp});
+            }
+        } else {
+            // Spawn enemies
+            const enemyList = DUNGEON_ENEMIES[dungeonId] || ENEMIES_ABYSS;
+            const scale = deepMode ? 1 + floor / 99 * 1.5 : 1 + (floor - 1) * 0.15;
+
+            for (let i = 1; i < rooms.length; i++) {
+                const r = rooms[i];
+                const count = randInt(1, 3);
+                for (let j = 0; j < count; j++) {
+                    const ex = randInt(r.x1+1, r.x2-1);
+                    const ey = randInt(r.y1+1, r.y2-1);
+                    if (!this.enemyAt(ex, ey)) {
+                        const available = enemyList.filter(e =>
+                            floor >= (e.minFloor || 1) && floor <= (e.maxFloor || 9999));
+                        if (available.length > 0) {
+                            const weights = available.map((_, i) => 1/(i+1));
+                            const template = weightedRandom(available, weights);
+                            this.enemies.push({
+                                x: ex, y: ey, name: template.name, char: template.char,
+                                hp: Math.floor(template.hp * scale), maxHp: Math.floor(template.hp * scale),
+                                atkMin: Math.floor(template.atkMin * scale), atkMax: Math.floor(template.atkMax * scale),
+                                armor: Math.floor((template.armor||0) * scale),
+                                fireDmg: Math.floor((template.fireDmg||0) * scale),
+                                coldDmg: Math.floor((template.coldDmg||0) * scale),
+                                ltnDmg: Math.floor((template.ltnDmg||0) * scale),
+                                darkDmg: Math.floor((template.darkDmg||0) * scale),
+                                exp: Math.floor(template.exp * scale), gold: Math.floor(template.gold * scale),
+                                soul: Math.floor((template.soul||1) * scale)
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -988,31 +1461,17 @@ class Dungeon {
                 if (!this.itemAt(ix, iy)) {
                     const roll = Math.random();
                     if (roll < 0.3) {
-                        this.items.push({type:'gold', x:ix, y:iy, amount: randInt(5,20)*floor});
+                        const goldMult = deepMode ? 2 : 1;
+                        this.items.push({type:'gold', x:ix, y:iy, amount: Math.floor(randInt(5,20)*floor*goldMult)});
                     } else if (roll < 0.5) {
                         this.items.push({type:'potion', x:ix, y:iy, heal: 20+floor*5});
                     } else {
-                        this.items.push({type:'equip', x:ix, y:iy, equip: generateEquipment(floor)});
+                        const eqFloor = deepMode ? floor + 20 : floor;
+                        this.items.push({type:'equip', x:ix, y:iy, equip: generateEquipment(eqFloor, dungeonId)});
                     }
                 }
             }
         }
-    }
-
-    createEnemy(x, y, floor) {
-        const maxIdx = Math.min(ENEMIES.length, 1 + Math.floor(floor/2));
-        const weights = Array(maxIdx).fill(0).map((_, i) => 1/(i+1));
-        const template = weightedRandom(ENEMIES.slice(0, maxIdx), weights);
-        const scale = 1 + (floor-1) * 0.15;
-        return {
-            x, y, name: template.name, char: template.char,
-            hp: Math.floor(template.hp * scale), maxHp: Math.floor(template.hp * scale),
-            atkMin: Math.floor(template.atkMin * scale), atkMax: Math.floor(template.atkMax * scale),
-            armor: Math.floor(template.armor * scale),
-            exp: Math.floor(template.exp * scale), gold: Math.floor(template.gold * scale),
-            fireDmg: Math.floor((template.fireDmg||0) * scale),
-            coldDmg: Math.floor((template.coldDmg||0) * scale)
-        };
     }
 
     walkable(x, y) {
@@ -1057,7 +1516,10 @@ function statKeyMap(k) {
     const map = {str:'str',dex:'dex',int:'int',hp:'maxHp',maxHp:'maxHp',dmgMin:'dmgMin',dmgMax:'dmgMax',
         armor:'armor',eva:'eva',block:'block',crit:'crit',critDmg:'critDmg',
         fireDmg:'fireDmg',coldDmg:'coldDmg',ltnDmg:'ltnDmg',darkDmg:'darkDmg',
-        fireRes:'fireRes',coldRes:'coldRes',ltnRes:'ltnRes',darkRes:'darkRes',hpRegen:'hpRegen'};
+        fireRes:'fireRes',coldRes:'coldRes',ltnRes:'ltnRes',darkRes:'darkRes',hpRegen:'hpRegen',
+        accuracy:'accuracy',lifeLeech:'lifeLeech',lifeOnKill:'lifeOnKill',
+        physDmgInc:'physDmgInc',fireDmgInc:'fireDmgInc',coldDmgInc:'coldDmgInc',ltnDmgInc:'ltnDmgInc',
+        goldFind:'goldFind',expBonus:'expBonus'};
     return map[k] || k;
 }
 
@@ -1065,14 +1527,15 @@ function statKeyMap(k) {
 function render() {
     if (!game || !game.player) return;
 
-    // Header
     const stats = game.player.getStats();
     document.getElementById('level').textContent = game.player.level;
     document.getElementById('hp').textContent = game.player.hp;
     document.getElementById('max-hp').textContent = stats.maxHp;
     document.getElementById('hp-bar').style.width = (game.player.hp / stats.maxHp * 100) + '%';
     document.getElementById('gold').textContent = game.player.gold;
+    document.getElementById('souls').textContent = game.player.souls;
     document.getElementById('floor').textContent = game.floor;
+    document.getElementById('dungeon-name').textContent = game.getDungeonInfo().name + (game.isDeepMode() ? '【深層】' : '');
 
     // Map
     let mapHtml = '';
@@ -1114,12 +1577,42 @@ function render() {
     }
     document.getElementById('messages').innerHTML = msgHtml;
 
-    // Game over check
-    if (game.gameOver) {
+    if (game.gameOver && !game.liberationEnd) {
         document.getElementById('gameover-title').textContent = game.player.hp <= 0 ? 'GAME OVER' : 'VICTORY!';
         document.getElementById('gameover-msg').textContent = `Floor: B${game.floor}F | Gold: ${game.player.gold} | Level: ${game.player.level}`;
         document.getElementById('gameover-modal').classList.add('active');
     }
+}
+
+function renderTown() {
+    if (!game || !game.player) return;
+
+    const town = game.town;
+    const info = town.getLevelInfo();
+
+    document.getElementById('town-name').textContent = info.name;
+    document.getElementById('town-souls').textContent = game.player.souls;
+    document.getElementById('town-offered').textContent = town.totalSoulsOffered;
+    document.getElementById('town-next').textContent = town.soulsToNextLevel() || 'MAX';
+
+    // NPC dialogue
+    let dialogue;
+    if (town.firstVisit) {
+        dialogue = NPC_DIALOGUE.firstMeeting;
+        town.firstVisit = false;
+    } else if (game.lostEquipment.length > 0) {
+        dialogue = NPC_DIALOGUE.firstDeath;
+    } else if (game.player.souls > 0) {
+        dialogue = NPC_DIALOGUE.returnWithSouls[randInt(0, NPC_DIALOGUE.returnWithSouls.length-1)];
+    } else {
+        dialogue = NPC_DIALOGUE.idle[randInt(0, NPC_DIALOGUE.idle.length-1)];
+    }
+    document.getElementById('npc-dialogue').textContent = dialogue;
+
+    // Enable/disable buttons
+    document.getElementById('btn-stash').disabled = !town.hasFeature('stash');
+    document.getElementById('btn-shop').disabled = !town.hasFeature('shop');
+    document.getElementById('btn-recover').disabled = game.lostEquipment.length === 0;
 }
 
 function renderInventory() {
@@ -1128,7 +1621,7 @@ function renderInventory() {
     let html = '';
     game.player.inventory.forEach((item, idx) => {
         if (item.type === 'potion') {
-            html += `<li class="item-row" data-idx="${idx}" data-type="potion"><span class="c-legend">Potion</span> HP+${item.heal}</li>`;
+            html += `<li class="item-row" data-idx="${idx}" data-type="potion"><span class="c-legend">回復薬</span> HP+${item.heal}</li>`;
         } else {
             const eq = item.equip;
             const canEquip = game.player.canEquip(eq);
@@ -1147,10 +1640,10 @@ function showItemDetail(idx) {
 
     if (item.type === 'potion') {
         detail.innerHTML = `
-            <div class="c-legend" style="font-size:16px;">Potion</div>
-            <div style="margin:10px 0;">Heal: <span class="c-green">+${item.heal} HP</span></div>
-            <button class="use-btn" id="btn-use-potion">Use Potion</button>
-            <button class="drop-btn" id="btn-drop-item">Drop</button>
+            <div class="c-legend" style="font-size:16px;">回復薬</div>
+            <div style="margin:10px 0;">回復: <span class="c-green">+${item.heal} HP</span></div>
+            <button class="use-btn" id="btn-use-potion">使用</button>
+            <button class="drop-btn" id="btn-drop-item">捨てる</button>
         `;
         document.getElementById('btn-use-potion').onclick = () => usePotion(idx);
         document.getElementById('btn-drop-item').onclick = () => dropItem(idx);
@@ -1158,25 +1651,26 @@ function showItemDetail(idx) {
         const eq = item.equip;
         const stats = eq.getTotalStats();
         const canEquip = game.player.canEquip(eq);
+        const pStats = game.player.getStats();
         let html = `<div class="${RARITY[eq.rarity].cls}" style="font-size:16px;">${eq.name}</div>`;
         html += `<div class="c-gray">${EQUIP_TYPES[eq.type].name} | ${RARITY[eq.rarity].name}</div>`;
+        if (eq.setName) html += `<div class="c-set">Set: ${eq.setName}</div>`;
         if (eq.reqStr || eq.reqDex || eq.reqInt) {
-            html += `<div style="margin:5px 0;">Req: `;
-            if (eq.reqStr) html += `<span class="${game.player.getStats().str >= eq.reqStr ? 'c-green' : 'c-red'}">STR:${eq.reqStr}</span> `;
-            if (eq.reqDex) html += `<span class="${game.player.getStats().dex >= eq.reqDex ? 'c-green' : 'c-red'}">DEX:${eq.reqDex}</span> `;
-            if (eq.reqInt) html += `<span class="${game.player.getStats().int >= eq.reqInt ? 'c-green' : 'c-red'}">INT:${eq.reqInt}</span>`;
+            html += `<div style="margin:5px 0;">必要: `;
+            if (eq.reqStr) html += `<span class="${pStats.str >= eq.reqStr ? 'c-green' : 'c-red'}">STR:${eq.reqStr}</span> `;
+            if (eq.reqDex) html += `<span class="${pStats.dex >= eq.reqDex ? 'c-green' : 'c-red'}">DEX:${eq.reqDex}</span> `;
+            if (eq.reqInt) html += `<span class="${pStats.int >= eq.reqInt ? 'c-green' : 'c-red'}">INT:${eq.reqInt}</span>`;
             html += `</div>`;
         }
-        html += `<div class="c-gray" style="margin-top:10px;">--- Stats ---</div>`;
+        html += `<div class="c-gray" style="margin-top:10px;">--- ステータス ---</div>`;
         for (const k in stats) {
             if (stats[k] !== 0) {
                 const isNeg = stats[k] < 0;
                 html += `<div class="${isNeg?'negative':''}">${formatStat(k)}: ${stats[k]>0?'+':''}${stats[k]}</div>`;
             }
         }
-        if (eq.setName) html += `<div class="c-set" style="margin-top:5px;">Set: ${eq.setName}</div>`;
-        html += `<button class="equip-btn" id="btn-equip-item" ${canEquip?'':'disabled'}>Equip</button>`;
-        html += `<button class="drop-btn" id="btn-drop-item">Drop</button>`;
+        html += `<button class="equip-btn" id="btn-equip-item" ${canEquip?'':'disabled'}>装備</button>`;
+        html += `<button class="drop-btn" id="btn-drop-item">捨てる</button>`;
         detail.innerHTML = html;
         document.getElementById('btn-equip-item').onclick = () => equipItem(idx);
         document.getElementById('btn-drop-item').onclick = () => dropItem(idx);
@@ -1185,10 +1679,12 @@ function showItemDetail(idx) {
 }
 
 function formatStat(k) {
-    const names = {dmgMin:'Min Dmg',dmgMax:'Max Dmg',armor:'Armor',hp:'HP',maxHp:'Max HP',str:'STR',dex:'DEX',int:'INT',
-        eva:'Evasion',block:'Block',crit:'Crit%',critDmg:'Crit Dmg',
-        fireDmg:'Fire Dmg',coldDmg:'Cold Dmg',ltnDmg:'Ltng Dmg',darkDmg:'Dark Dmg',
-        fireRes:'Fire Res',coldRes:'Cold Res',ltnRes:'Ltng Res',darkRes:'Dark Res',hpRegen:'HP Regen'};
+    const names = {dmgMin:'最小ダメージ',dmgMax:'最大ダメージ',armor:'防御',hp:'HP',maxHp:'最大HP',str:'STR',dex:'DEX',int:'INT',
+        eva:'回避',block:'ブロック',crit:'クリティカル',critDmg:'クリダメ',
+        fireDmg:'炎ダメージ',coldDmg:'氷ダメージ',ltnDmg:'雷ダメージ',darkDmg:'闇ダメージ',
+        fireRes:'炎耐性',coldRes:'氷耐性',ltnRes:'雷耐性',darkRes:'闇耐性',hpRegen:'HP再生',
+        accuracy:'命中',lifeLeech:'ライフリーチ',lifeOnKill:'キル時HP',
+        goldFind:'ゴールド発見',expBonus:'経験値ボーナス'};
     return names[k] || k;
 }
 
@@ -1201,7 +1697,7 @@ function usePotion(idx) {
         game.player.inventory.splice(idx, 1);
         game.msg(`HP +${heal}`, 'c-green');
         document.getElementById('inventory-modal').classList.remove('active');
-        render();
+        if (game.inTown) renderTown(); else render();
     }
 }
 
@@ -1239,15 +1735,15 @@ function doEquip(idx, slot) {
     for (const o of old) {
         if (o) game.player.inventory.push({type:'equip', equip: o});
     }
-    game.msg(`Equipped ${eq.name}`, RARITY[eq.rarity].cls);
+    game.msg(`${eq.name}を装備`, RARITY[eq.rarity].cls);
     document.getElementById('equip-modal').classList.remove('active');
     document.getElementById('inventory-modal').classList.remove('active');
-    render();
+    if (game.inTown) renderTown(); else render();
 }
 
 function dropItem(idx) {
     game.player.inventory.splice(idx, 1);
-    game.msg('Dropped item');
+    game.msg('アイテムを捨てた');
     renderInventory();
 }
 
@@ -1259,12 +1755,12 @@ function showEquipSelect(slot) {
     });
 
     const list = document.getElementById('equip-select-list');
-    document.getElementById('equip-modal-title').textContent = `${SLOT_NAMES[slot]} - Select Equipment`;
+    document.getElementById('equip-modal-title').textContent = `${SLOT_NAMES[slot]} - 装備選択`;
     let html = '';
 
     const current = game.player.equipment[slot];
     if (current) {
-        html += `<li class="item-row c-red" onclick="unequipSlot('${slot}')">[Unequip] ${current.name}</li>`;
+        html += `<li class="item-row c-red" onclick="unequipSlot('${slot}')">[外す] ${current.name}</li>`;
     }
 
     candidates.forEach((item, i) => {
@@ -1276,7 +1772,7 @@ function showEquipSelect(slot) {
     });
 
     if (!current && candidates.length === 0) {
-        html = '<li class="c-gray">No equipment available</li>';
+        html = '<li class="c-gray">装備可能なアイテムがありません</li>';
     }
 
     list.innerHTML = html;
@@ -1288,10 +1784,10 @@ function unequipSlot(slot) {
     if (eq) {
         game.player.inventory.push({type:'equip', equip: eq});
         game.player.equipment[slot] = null;
-        game.msg(`Unequipped ${eq.name}`);
+        game.msg(`${eq.name}を外した`);
     }
     document.getElementById('equip-modal').classList.remove('active');
-    render();
+    if (game.inTown) renderTown(); else render();
 }
 
 function renderStatus() {
@@ -1303,45 +1799,193 @@ function renderStatus() {
         <div class="stat-row"><span class="stat-label">EXP</span><span class="stat-value">${p.exp} / ${p.expNext}</span></div>
         <div class="stat-row"><span class="stat-label">HP</span><span class="stat-value c-red">${p.hp} / ${s.maxHp}</span></div>
         <div class="stat-row"><span class="stat-label">Gold</span><span class="stat-value c-rare">${p.gold}</span></div>
-        <div style="margin:15px 0;color:#f1c40f;">--- Attributes ---</div>
+        <div class="stat-row"><span class="stat-label">魂</span><span class="stat-value c-flame">${p.souls}</span></div>
+        <div style="margin:15px 0;color:#f1c40f;">--- 能力値 ---</div>
         <div class="stat-row"><span class="stat-label">STR</span><span class="stat-value c-red">${s.str}</span></div>
         <div class="stat-row"><span class="stat-label">DEX</span><span class="stat-value c-green">${s.dex}</span></div>
         <div class="stat-row"><span class="stat-label">INT</span><span class="stat-value c-magic">${s.int}</span></div>
-        <div style="margin:15px 0;color:#f1c40f;">--- Combat ---</div>
-        <div class="stat-row"><span class="stat-label">Damage</span><span class="stat-value">${s.dmgMin} - ${s.dmgMax}</span></div>
-        <div class="stat-row"><span class="stat-label">Armor</span><span class="stat-value">${s.armor}</span></div>
-        <div class="stat-row"><span class="stat-label">Evasion</span><span class="stat-value">${s.eva}%</span></div>
-        <div class="stat-row"><span class="stat-label">Block</span><span class="stat-value">${s.block}%</span></div>
-        <div class="stat-row"><span class="stat-label">Crit Chance</span><span class="stat-value">${s.crit}%</span></div>
-        <div class="stat-row"><span class="stat-label">Crit Damage</span><span class="stat-value">${s.critDmg}%</span></div>
-        <div style="margin:15px 0;color:#f1c40f;">--- Elemental ---</div>
-        <div class="stat-row"><span class="stat-label">Fire Dmg</span><span class="stat-value c-red">${s.fireDmg}</span></div>
-        <div class="stat-row"><span class="stat-label">Cold Dmg</span><span class="stat-value c-cyan">${s.coldDmg}</span></div>
-        <div class="stat-row"><span class="stat-label">Ltng Dmg</span><span class="stat-value c-rare">${s.ltnDmg}</span></div>
-        <div class="stat-row"><span class="stat-label">Dark Dmg</span><span class="stat-value c-legend">${s.darkDmg}</span></div>
-        <div style="margin:15px 0;color:#f1c40f;">--- Resistances ---</div>
-        <div class="stat-row"><span class="stat-label">Fire Res</span><span class="stat-value c-red">${s.fireRes}%</span></div>
-        <div class="stat-row"><span class="stat-label">Cold Res</span><span class="stat-value c-cyan">${s.coldRes}%</span></div>
-        <div class="stat-row"><span class="stat-label">Ltng Res</span><span class="stat-value c-rare">${s.ltnRes}%</span></div>
-        <div class="stat-row"><span class="stat-label">Dark Res</span><span class="stat-value c-legend">${s.darkRes}%</span></div>
+        <div style="margin:15px 0;color:#f1c40f;">--- 戦闘 ---</div>
+        <div class="stat-row"><span class="stat-label">ダメージ</span><span class="stat-value">${s.dmgMin} - ${s.dmgMax}</span></div>
+        <div class="stat-row"><span class="stat-label">命中率</span><span class="stat-value">${s.accuracy}%</span></div>
+        <div class="stat-row"><span class="stat-label">防御</span><span class="stat-value">${s.armor}</span></div>
+        <div class="stat-row"><span class="stat-label">回避</span><span class="stat-value">${s.eva}%</span></div>
+        <div class="stat-row"><span class="stat-label">ブロック</span><span class="stat-value">${s.block}%</span></div>
+        <div class="stat-row"><span class="stat-label">クリティカル</span><span class="stat-value">${s.crit}%</span></div>
+        <div class="stat-row"><span class="stat-label">クリダメ</span><span class="stat-value">${s.critDmg}%</span></div>
+        <div style="margin:15px 0;color:#f1c40f;">--- 属性 ---</div>
+        <div class="stat-row"><span class="stat-label">炎ダメ</span><span class="stat-value c-red">${s.fireDmg}</span></div>
+        <div class="stat-row"><span class="stat-label">氷ダメ</span><span class="stat-value c-cyan">${s.coldDmg}</span></div>
+        <div class="stat-row"><span class="stat-label">雷ダメ</span><span class="stat-value c-rare">${s.ltnDmg}</span></div>
+        <div class="stat-row"><span class="stat-label">闇ダメ</span><span class="stat-value c-legend">${s.darkDmg}</span></div>
+        <div style="margin:15px 0;color:#f1c40f;">--- 耐性 ---</div>
+        <div class="stat-row"><span class="stat-label">炎耐性</span><span class="stat-value c-red">${s.fireRes}%</span></div>
+        <div class="stat-row"><span class="stat-label">氷耐性</span><span class="stat-value c-cyan">${s.coldRes}%</span></div>
+        <div class="stat-row"><span class="stat-label">雷耐性</span><span class="stat-value c-rare">${s.ltnRes}%</span></div>
+        <div class="stat-row"><span class="stat-label">闇耐性</span><span class="stat-value c-legend">${s.darkRes}%</span></div>
     `;
     document.getElementById('status-content').innerHTML = html;
 }
 
+function showDungeonSelect() {
+    const list = document.getElementById('dungeon-list');
+    let html = '';
+
+    for (let id = 0; id <= 3; id++) {
+        const info = DUNGEONS[id];
+        const cleared = game.dungeonsCleared.includes(id);
+        const highest = game.highestFloors[id] || 1;
+
+        // Unlock conditions
+        let locked = false;
+        let lockReason = '';
+        if (id === 1 && !game.dungeonsCleared.includes(0)) {
+            locked = true;
+            lockReason = '(深淵をクリアで解放)';
+        } else if (id === 2 && !game.dungeonsCleared.includes(1)) {
+            locked = true;
+            lockReason = '(灼熱の坑道をクリアで解放)';
+        } else if (id === 3) {
+            if (!game.tombDeepCleared || game.town.level < 4) {
+                locked = true;
+                lockReason = '(墓所【深層】クリア & 町Lv4で解放)';
+            }
+        }
+
+        const deepMode = id === 2 && game.dungeonsCleared.includes(2);
+        const displayName = info.name + (deepMode ? '【深層】' : '');
+
+        html += `<li class="dungeon-item ${locked ? 'locked' : ''}" data-id="${id}" ${locked ? '' : `onclick="selectDungeon(${id})"`}>
+            <div><strong>${displayName}</strong> ${cleared ? '<span class="c-green">✓</span>' : ''}</div>
+            <div class="c-gray">${info.desc} (${info.maxFloor}F)</div>
+            ${locked ? `<div class="c-red">${lockReason}</div>` : `<div class="c-cyan">最高到達: B${highest}F</div>`}
+        </li>`;
+    }
+
+    list.innerHTML = html;
+    document.getElementById('dungeon-modal').classList.add('active');
+}
+
+function selectDungeon(id) {
+    document.getElementById('dungeon-modal').classList.remove('active');
+    game.enterDungeon(id);
+    document.getElementById('town-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'block';
+    render();
+}
+
+function showOfferSouls() {
+    const content = document.getElementById('offer-content');
+    const souls = game.player.souls;
+    const town = game.town;
+    const nextLevel = town.getNextLevelInfo();
+    const toNext = town.soulsToNextLevel();
+
+    let html = `<div style="margin-bottom:15px;">所持魂: <span class="c-flame">${souls}</span></div>`;
+    html += `<div style="margin-bottom:15px;">現在の町: <span class="c-cyan">${town.getLevelInfo().name}</span></div>`;
+
+    if (nextLevel) {
+        html += `<div style="margin-bottom:15px;">次のレベル: <span class="c-rare">${nextLevel.name}</span> (あと${toNext}魂)</div>`;
+    } else {
+        html += `<div style="margin-bottom:15px;color:#2ecc71;">町は最大レベルに達しています</div>`;
+    }
+
+    if (souls > 0) {
+        html += `<button class="use-btn" onclick="offerAllSouls()">全ての魂を捧げる (${souls})</button>`;
+    } else {
+        html += `<div class="c-gray">捧げる魂がありません</div>`;
+    }
+
+    content.innerHTML = html;
+    document.getElementById('offer-modal').classList.add('active');
+}
+
+function offerAllSouls() {
+    const souls = game.player.souls;
+    if (souls <= 0) return;
+
+    game.player.souls = 0;
+    const leveledUp = game.town.offerSouls(souls);
+
+    if (leveledUp) {
+        game.msg(`町が発展した！『${game.town.getLevelInfo().name}』`, 'c-green');
+    } else {
+        game.msg(`${souls}魂を捧げた`, 'c-flame');
+    }
+
+    document.getElementById('offer-modal').classList.remove('active');
+    game.save();
+    renderTown();
+}
+
+function showRecovery() {
+    const content = document.getElementById('recovery-content');
+    const lost = game.lostEquipment;
+
+    if (lost.length === 0) {
+        content.innerHTML = '<div class="c-gray">回収できる装備がありません</div>';
+        document.getElementById('recovery-modal').classList.add('active');
+        return;
+    }
+
+    let html = '<div style="margin-bottom:15px;">失った装備を魂で回収できます</div>';
+    html += '<ul class="item-list">';
+
+    lost.forEach((eq, idx) => {
+        const cost = eq.calcRecoveryCost ? eq.calcRecoveryCost() : 10;
+        const canAfford = game.player.souls >= cost;
+        html += `<li class="item-row" style="${canAfford ? '' : 'opacity:0.5'}">
+            <span class="${RARITY[eq.rarity].cls}">${eq.name}</span>
+            <div class="c-flame">コスト: ${cost}魂 ${canAfford ? '' : '(魂不足)'}</div>
+            ${canAfford ? `<button class="use-btn" onclick="recoverEquip(${idx})">回収</button>` : ''}
+        </li>`;
+    });
+
+    html += '</ul>';
+    content.innerHTML = html;
+    document.getElementById('recovery-modal').classList.add('active');
+}
+
+function recoverEquip(idx) {
+    const eq = game.lostEquipment[idx];
+    const cost = eq.calcRecoveryCost ? eq.calcRecoveryCost() : 10;
+
+    if (game.player.souls < cost) {
+        game.msg('魂が足りません', 'c-red');
+        return;
+    }
+
+    if (game.player.inventory.length >= 20) {
+        game.msg('持ち物が満杯です', 'c-red');
+        return;
+    }
+
+    game.player.souls -= cost;
+    game.player.inventory.push({type: 'equip', equip: eq});
+    game.lostEquipment.splice(idx, 1);
+    game.msg(`${eq.name}を回収した`, 'c-green');
+
+    document.getElementById('recovery-modal').classList.remove('active');
+    game.save();
+    renderTown();
+}
+
 // ==================== EVENT HANDLERS ====================
 document.addEventListener('DOMContentLoaded', () => {
-    // Check for save
     if (localStorage.getItem('dungeonSave')) {
         document.getElementById('btn-continue').disabled = false;
     }
 
-    // Title buttons
     document.getElementById('btn-continue').onclick = () => {
         game = new Game();
         if (game.load()) {
             document.getElementById('title-screen').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'block';
-            render();
+            if (game.inTown) {
+                document.getElementById('town-screen').style.display = 'block';
+                renderTown();
+            } else {
+                document.getElementById('game-screen').style.display = 'block';
+                render();
+            }
         }
     };
 
@@ -1349,8 +1993,8 @@ document.addEventListener('DOMContentLoaded', () => {
         game = new Game();
         game.start();
         document.getElementById('title-screen').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'block';
-        render();
+        document.getElementById('town-screen').style.display = 'block';
+        renderTown();
     };
 
     // Movement
@@ -1358,7 +2002,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.onclick = () => {
             const dir = btn.dataset.dir;
             const moves = {up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
-            if (moves[dir]) {
+            if (moves[dir] && !game.inTown) {
                 game.move(moves[dir][0], moves[dir][1]);
                 render();
             }
@@ -1369,6 +2013,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', e => {
         if (!game || game.gameOver) return;
         if (document.querySelector('.modal.active')) return;
+        if (game.inTown) return;
         const keys = {w:[0,-1],a:[-1,0],s:[0,1],d:[1,0],ArrowUp:[0,-1],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowRight:[1,0]};
         if (keys[e.key]) {
             game.move(keys[e.key][0], keys[e.key][1]);
@@ -1386,7 +2031,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Action buttons
+    // Game buttons
     document.getElementById('btn-inventory').onclick = () => {
         renderInventory();
         document.getElementById('inventory-modal').classList.add('active');
@@ -1398,14 +2043,43 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     document.getElementById('btn-stairs').onclick = () => {
-        game.descend();
-        render();
+        if (!game.inTown) {
+            game.descend();
+            render();
+        }
+    };
+
+    document.getElementById('btn-return-town').onclick = () => {
+        if (!game.inTown) {
+            game.returnToTown();
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('town-screen').style.display = 'block';
+            renderTown();
+        }
     };
 
     document.getElementById('btn-save').onclick = () => {
         game.save();
-        game.msg('Game saved!', 'c-green');
+        game.msg('セーブしました！', 'c-green');
         render();
+    };
+
+    // Town buttons
+    document.getElementById('btn-dungeon').onclick = () => showDungeonSelect();
+    document.getElementById('btn-offer-souls').onclick = () => showOfferSouls();
+    document.getElementById('btn-recover').onclick = () => showRecovery();
+    document.getElementById('btn-town-inv').onclick = () => {
+        renderInventory();
+        document.getElementById('inventory-modal').classList.add('active');
+    };
+    document.getElementById('btn-town-status').onclick = () => {
+        renderStatus();
+        document.getElementById('status-modal').classList.add('active');
+    };
+    document.getElementById('btn-town-save').onclick = () => {
+        game.save();
+        game.msg('セーブしました！', 'c-green');
+        renderTown();
     };
 
     // Inventory
@@ -1426,7 +2100,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('status-modal').classList.remove('active');
     };
 
-    // Equipment slots
     document.getElementById('equipment-list').onclick = e => {
         const slot = e.target.closest('.equip-slot');
         if (slot) showEquipSelect(slot.dataset.slot);
@@ -1436,10 +2109,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('equip-modal').classList.remove('active');
     };
 
-    // Game over
+    document.getElementById('close-dungeon').onclick = () => {
+        document.getElementById('dungeon-modal').classList.remove('active');
+    };
+
+    document.getElementById('close-offer').onclick = () => {
+        document.getElementById('offer-modal').classList.remove('active');
+    };
+
+    document.getElementById('close-recovery').onclick = () => {
+        document.getElementById('recovery-modal').classList.remove('active');
+    };
+
     document.getElementById('btn-restart').onclick = () => {
         document.getElementById('gameover-modal').classList.remove('active');
         document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('town-screen').style.display = 'none';
         document.getElementById('title-screen').style.display = 'block';
         document.getElementById('btn-continue').disabled = !localStorage.getItem('dungeonSave');
     };
