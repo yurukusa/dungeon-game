@@ -50,23 +50,23 @@
             background: #0f0f23;
             border: 2px solid #4a4a6a;
             border-radius: 8px;
-            padding: 5px;
-            flex: 1;
-            min-width: 300px;
+            padding: 3px;
+            width: 100%;
+            overflow-x: auto;
         }
         #map {
             font-family: monospace;
-            font-size: 14px;
-            line-height: 1.2;
+            font-size: 16px;
+            line-height: 1.1;
             white-space: pre;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
         #side-panel {
-            width: 200px;
             background: #16213e;
             border-radius: 8px;
             padding: 10px;
             font-size: 12px;
+            margin-top: 10px;
         }
         #messages {
             background: #0f0f23;
@@ -378,7 +378,7 @@
             color: #3498db;
         }
         @media (max-width: 600px) {
-            #map { font-size: 10px; letter-spacing: 1px; }
+            #map { font-size: 12px; letter-spacing: 0px; }
             #side-panel { width: 100%; }
             .ctrl-btn { width: 60px; height: 60px; }
         }
