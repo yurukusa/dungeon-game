@@ -1367,8 +1367,8 @@ class Game {
 
             // Equipment drop (10% base + exp bonus up to 20%)
             const baseDropChance = 0.10;
-            const expBonus = Math.min(0.20, enemy.exp / 500);
-            const dropChance = baseDropChance + expBonus;
+            const expDropBonus = Math.min(0.20, enemy.exp / 500);
+            const dropChance = baseDropChance + expDropBonus;
             if (Math.random() < dropChance) {
                 const playerMf = stats.magicFind || 0;
                 const droppedEq = generateEquipment(this.floor, this.currentDungeon, playerMf);
@@ -2291,7 +2291,6 @@ class Dungeon {
         }
 
         // Legend装備確定配置: 9F, 19F, 29F... または最終階層
-        const info = DUNGEONS[dungeonId];
         const maxFloor = info ? info.maxFloor : 15;
         const isLegendFloor = (floor % 10 === 9) || (floor === maxFloor && maxFloor > 1);
         if (isLegendFloor && rooms.length > 1 && floor >= 8) {
