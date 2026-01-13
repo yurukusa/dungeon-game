@@ -2116,7 +2116,7 @@ function statKeyMap(k) {
 
 // ==================== RENDERING ====================
 function render() {
-    if (!game || !game.player) return;
+    if (!game || !game.player || !game.dungeon) return;
 
     const stats = game.player.getStats();
     document.getElementById('level').textContent = game.player.level;
@@ -2510,11 +2510,16 @@ function showDungeonSelect() {
 }
 
 function selectDungeon(id) {
-    document.getElementById('dungeon-modal').classList.remove('active');
-    game.enterDungeon(id);
-    document.getElementById('town-screen').style.display = 'none';
-    document.getElementById('game-screen').style.display = 'block';
-    render();
+    try {
+        document.getElementById('dungeon-modal').classList.remove('active');
+        game.enterDungeon(id);
+        document.getElementById('town-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        render();
+    } catch (e) {
+        console.error('selectDungeon error:', e);
+        alert('エラーが発生しました: ' + e.message);
+    }
 }
 
 function showOfferSouls() {
