@@ -748,33 +748,84 @@ const DUNGEON_TAG_BONUS = {
     2: {cold: 2.5, dark: 2.0, lightning: 1.5}  // Frozen: cold/dark/lightning
 };
 
+// Unique special effects (PoE-like)
+const UNIQUE_EFFECTS = {
+    // Attack
+    DAMAGE_WHEN_LOW_HP: 'damageWhenLowHp',      // +dmg% when player HP < 35%
+    CULL: 'cull',                               // Instant kill enemies < 10% HP
+    EXTRA_HIT: 'extraHit',                      // % chance for double attack
+    PHYS_TO_FIRE: 'physToFire',                 // Convert phys to fire
+    PHYS_TO_COLD: 'physToCold',                 // Convert phys to cold
+    PHYS_TO_LIGHTNING: 'physToLightning',       // Convert phys to lightning
+    FIRE_PEN: 'firePen',                        // Ignore enemy fire resist
+    COLD_PEN: 'coldPen',                        // Ignore enemy cold resist
+    LIGHTNING_PEN: 'lightningPen',              // Ignore enemy lightning resist
+    // Defense
+    BLOCK_HEAL: 'blockHeal',                    // Heal on block
+    REFLECT: 'reflect',                         // Reflect % damage taken
+    CANNOT_BE_CRIT: 'cannotBeCrit',             // Immune to crits
+    LOW_LIFE_DEFENSE: 'lowLifeDefense',         // +armor when HP < 35%
+    DAMAGE_TO_SOUL: 'damageToSoul',             // Convert damage to soul cost
+    // Trigger
+    ON_KILL_RAGE: 'onKillRage',                 // +dmg% buff on kill (3 turns)
+    ON_KILL_HASTE: 'onKillHaste',               // +accuracy buff on kill (3 turns)
+    ON_KILL_SOUL: 'onKillSoul',                 // Extra soul on kill
+    ON_HIT_BURN: 'onHitBurn',                   // Apply burn (fire DoT)
+    ON_HIT_FREEZE: 'onHitFreeze',               // % chance to skip enemy turn
+    // Utility
+    SOUL_FIND: 'soulFind',                      // +% soul gain
+    BONUS_EXP: 'bonusExp',                      // +% exp (already in stats)
+    HP_REGEN_PERCENT: 'hpRegenPercent'          // % maxHP regen per floor
+};
+
 const UNIQUES = [
     // Tier 0: Strongest effects + heavy negatives (1F~)
-    {name:'滅びの大剣',type:'greatsword',tier:0,stats:{dmgMin:45,dmgMax:80,crit:15,darkDmg:30},neg:{hp:-50,fireRes:-30},reqStr:20,desc:'振るう者の命をも削る破壊の剣'},
-    {name:'不死王の鎧',type:'body',tier:0,stats:{armor:80,hp:80,darkRes:50,hpRegen:8},neg:{fireRes:-50,ltnRes:-40,eva:-20},reqStr:18,desc:'かつての不死王が纏った鎧'},
-    {name:'虚無の指輪',type:'ring',tier:0,stats:{dmgMin:10,dmgMax:20,darkDmg:25,crit:20},neg:{hp:-40,coldRes:-30},desc:'全てを虚無に還す力を宿す'},
-    {name:'狂乱の仮面',type:'helmet',tier:0,stats:{str:25,dex:25,critDmg:50},neg:{armor:-30,hp:-30,block:-20},desc:'装備者を狂気に陥れる仮面'},
+    {name:'滅びの大剣',type:'greatsword',tier:0,stats:{dmgMin:45,dmgMax:80,crit:15,darkDmg:30},neg:{hp:-50,fireRes:-30},reqStr:20,desc:'振るう者の命をも削る破壊の剣',
+     effects:{damageWhenLowHp:80,cull:10}}, // +80% dmg at low HP, cull <10%
+    {name:'不死王の鎧',type:'body',tier:0,stats:{armor:80,hp:80,darkRes:50,hpRegen:8},neg:{fireRes:-50,ltnRes:-40,eva:-20},reqStr:18,desc:'かつての不死王が纏った鎧',
+     effects:{cannotBeCrit:true,damageToSoul:20}}, // Can't be crit, 20% dmg to soul
+    {name:'虚無の指輪',type:'ring',tier:0,stats:{dmgMin:10,dmgMax:20,darkDmg:25,crit:20},neg:{hp:-40,coldRes:-30},desc:'全てを虚無に還す力を宿す',
+     effects:{onKillSoul:3,soulFind:50}}, // +3 soul on kill, +50% soul gain
+    {name:'狂乱の仮面',type:'helmet',tier:0,stats:{str:25,dex:25,critDmg:50},neg:{armor:-30,hp:-30,block:-20},desc:'装備者を狂気に陥れる仮面',
+     effects:{onKillRage:50,extraHit:15}}, // +50% dmg buff on kill, 15% double attack
     // Tier 1: Strong effects + moderate negatives (1F~)
-    {name:'業火の剣',type:'sword',tier:1,stats:{dmgMin:15,dmgMax:28,fireDmg:35},neg:{coldRes:-30},reqStr:12,desc:'燃え盛る炎の剣'},
-    {name:'氷結の杖',type:'staff',tier:1,stats:{dmgMin:10,dmgMax:22,coldDmg:40,int:12},neg:{fireRes:-35},reqInt:14,desc:'全てを凍らせる極寒の杖'},
-    {name:'狂戦士の兜',type:'helmet',tier:1,stats:{str:18,dmgMin:6,dmgMax:12,critDmg:35},neg:{armor:-15,eva:-15},reqStr:12,desc:'理性を捨て力を得る兜'},
-    {name:'呪われた短剣',type:'dagger',tier:1,stats:{dmgMin:10,dmgMax:20,crit:25,darkDmg:15},neg:{hp:-25},reqDex:10,desc:'命を削る代わりに強力な一撃'},
+    {name:'業火の剣',type:'sword',tier:1,stats:{dmgMin:15,dmgMax:28,fireDmg:35},neg:{coldRes:-30},reqStr:12,desc:'燃え盛る炎の剣',
+     effects:{physToFire:30,onHitBurn:8}}, // 30% phys->fire, burn 8/turn
+    {name:'氷結の杖',type:'staff',tier:1,stats:{dmgMin:10,dmgMax:22,coldDmg:40,int:12},neg:{fireRes:-35},reqInt:14,desc:'全てを凍らせる極寒の杖',
+     effects:{physToCold:30,onHitFreeze:25}}, // 30% phys->cold, 25% freeze
+    {name:'狂戦士の兜',type:'helmet',tier:1,stats:{str:18,dmgMin:6,dmgMax:12,critDmg:35},neg:{armor:-15,eva:-15},reqStr:12,desc:'理性を捨て力を得る兜',
+     effects:{damageWhenLowHp:40,lowLifeDefense:30}}, // +40% dmg, +30 armor at low HP
+    {name:'呪われた短剣',type:'dagger',tier:1,stats:{dmgMin:10,dmgMax:20,crit:25,darkDmg:15},neg:{hp:-25},reqDex:10,desc:'命を削る代わりに強力な一撃',
+     effects:{cull:15,lifeLeech:5}}, // Cull <15%, 5% life leech (overrides stats)
     // Tier 2: Medium effects + light negatives (5F~)
-    {name:'竜殺しの弓',type:'bow',tier:2,stats:{dmgMin:20,dmgMax:40,crit:15,fireDmg:20},neg:{armor:-10},reqDex:15,desc:'伝説の竜を屠った弓'},
-    {name:'全知の指輪',type:'ring',tier:2,stats:{int:15,fireDmg:12,coldDmg:12,ltnDmg:12},neg:{str:-5},reqInt:12,desc:'魔力を極限まで高める指輪'},
-    {name:'疾風のブーツ',type:'boots',tier:2,stats:{eva:20,dex:10},neg:{armor:-8},desc:'軽さと引き換えに守りを捨てた靴'},
-    {name:'血の指輪',type:'ring',tier:2,stats:{dmgMin:5,dmgMax:10,hpRegen:5},neg:{fireRes:-15},desc:'生命力を吸い取り攻撃に変える'},
-    {name:'貫通の矢筒',type:'quiver',tier:2,stats:{dex:12,crit:10,accuracy:15,dmgMin:3,dmgMax:8},neg:{armor:-12},reqDex:12,desc:'どんな鎧も貫く矢を収めた筒'},
+    {name:'竜殺しの弓',type:'bow',tier:2,stats:{dmgMin:20,dmgMax:40,crit:15,fireDmg:20},neg:{armor:-10},reqDex:15,desc:'伝説の竜を屠った弓',
+     effects:{firePen:20,extraHit:10}}, // 20% fire pen, 10% double attack
+    {name:'全知の指輪',type:'ring',tier:2,stats:{int:15,fireDmg:12,coldDmg:12,ltnDmg:12},neg:{str:-5},reqInt:12,desc:'魔力を極限まで高める指輪',
+     effects:{firePen:10,coldPen:10,lightningPen:10}}, // 10% all elemental pen
+    {name:'疾風のブーツ',type:'boots',tier:2,stats:{eva:20,dex:10},neg:{armor:-8},desc:'軽さと引き換えに守りを捨てた靴',
+     effects:{onKillHaste:30}}, // +30 accuracy buff on kill
+    {name:'血の指輪',type:'ring',tier:2,stats:{dmgMin:5,dmgMax:10,hpRegen:5},neg:{fireRes:-15},desc:'生命力を吸い取り攻撃に変える',
+     effects:{lifeLeech:3,hpRegenPercent:2}}, // 3% leech, 2% maxHP regen/floor
+    {name:'貫通の矢筒',type:'quiver',tier:2,stats:{dex:12,crit:10,accuracy:15,dmgMin:3,dmgMax:8},neg:{armor:-12},reqDex:12,desc:'どんな鎧も貫く矢を収めた筒',
+     effects:{extraHit:8}}, // 8% double attack
     // Tier 3: Light effects + almost no negatives (10F~)
-    {name:'運命のアミュレット',type:'amulet',tier:3,stats:{crit:12,goldFind:25,expBonus:15},neg:{},desc:'幸運を引き寄せる護符'},
-    {name:'守護者の盾',type:'shield',tier:3,stats:{armor:20,block:25,hp:15},neg:{},reqStr:10,desc:'堅牢なる守りの盾'},
-    {name:'旅人のベルト',type:'belt',tier:3,stats:{hp:20,goldFind:15,eva:8},neg:{},desc:'数多の冒険者が愛用したベルト'},
-    {name:'賢者の手袋',type:'gloves',tier:3,stats:{int:10,coldDmg:8,fireRes:10},neg:{},reqInt:8,desc:'古の賢者が遺した手袋'},
+    {name:'運命のアミュレット',type:'amulet',tier:3,stats:{crit:12,goldFind:25,expBonus:15},neg:{},desc:'幸運を引き寄せる護符',
+     effects:{soulFind:25}}, // +25% soul gain
+    {name:'守護者の盾',type:'shield',tier:3,stats:{armor:20,block:25,hp:15},neg:{},reqStr:10,desc:'堅牢なる守りの盾',
+     effects:{blockHeal:10,reflect:5}}, // Heal 10 on block, reflect 5%
+    {name:'旅人のベルト',type:'belt',tier:3,stats:{hp:20,goldFind:15,eva:8},neg:{},desc:'数多の冒険者が愛用したベルト',
+     effects:{hpRegenPercent:1}}, // 1% maxHP regen/floor
+    {name:'賢者の手袋',type:'gloves',tier:3,stats:{int:10,coldDmg:8,fireRes:10},neg:{},reqInt:8,desc:'古の賢者が遺した手袋',
+     effects:{coldPen:8}}, // 8% cold pen
     // Tier 4: Modest effects + no negatives (20F~)
-    {name:'初心者の剣',type:'sword',tier:4,stats:{dmgMin:8,dmgMax:15,str:5},neg:{},reqStr:5,desc:'駆け出し冒険者に与えられる剣'},
-    {name:'見習いのローブ',type:'body',tier:4,stats:{armor:10,int:8,hp:10},neg:{},desc:'魔法を学ぶ者の衣'},
-    {name:'幸運のコイン',type:'amulet',tier:4,stats:{goldFind:20,crit:5},neg:{},desc:'少しだけ運が良くなるコイン'},
-    {name:'軽業師のブーツ',type:'boots',tier:4,stats:{eva:12,dex:5},neg:{},desc:'軽やかな足さばきを可能にする靴'}
+    {name:'初心者の剣',type:'sword',tier:4,stats:{dmgMin:8,dmgMax:15,str:5},neg:{},reqStr:5,desc:'駆け出し冒険者に与えられる剣',
+     effects:{}},
+    {name:'見習いのローブ',type:'body',tier:4,stats:{armor:10,int:8,hp:10},neg:{},desc:'魔法を学ぶ者の衣',
+     effects:{hpRegenPercent:1}}, // 1% maxHP regen/floor
+    {name:'幸運のコイン',type:'amulet',tier:4,stats:{goldFind:20,crit:5},neg:{},desc:'少しだけ運が良くなるコイン',
+     effects:{soulFind:10}}, // +10% soul gain
+    {name:'軽業師のブーツ',type:'boots',tier:4,stats:{eva:12,dex:5},neg:{},desc:'軽やかな足さばきを可能にする靴',
+     effects:{}}
 ];
 const UNIQUE_TIER_FLOORS = {0:1,1:1,2:5,3:10,4:20};
 
@@ -1047,31 +1098,106 @@ class Game {
 
     combat(enemy) {
         const stats = this.player.getStats();
+        const effects = this.player.getEquippedEffects();
 
-        // Hit check
-        if (randInt(1, 100) > (stats.accuracy || 80)) {
+        // Accuracy with buff
+        const accuracyBuff = this.player.getBuffValue('haste');
+        const totalAccuracy = (stats.accuracy || 80) + accuracyBuff;
+        if (randInt(1, 100) > totalAccuracy) {
             this.msg(`MISS! ${enemy.name}`, 'c-gray');
             return;
         }
 
+        // Base physical damage
         let dmg = randInt(stats.dmgMin, stats.dmgMax);
         dmg = Math.floor(dmg * (100 + (stats.physDmgInc || 0)) / 100);
         const crit = randInt(1, 100) <= stats.crit;
         if (crit) dmg = Math.floor(dmg * stats.critDmg / 100);
+
+        // Damage buff from onKillRage
+        const rageBuff = this.player.getBuffValue('rage');
+        if (rageBuff > 0) {
+            dmg = Math.floor(dmg * (100 + rageBuff) / 100);
+        }
+
+        // Low HP damage bonus
+        if (effects.damageWhenLowHp && this.player.hp < stats.maxHp * 0.35) {
+            dmg = Math.floor(dmg * (100 + effects.damageWhenLowHp) / 100);
+            this.msg(`低HP強化発動!`, 'c-unique');
+        }
+
+        // Physical to elemental conversion
+        let fireDmg = Math.floor((stats.fireDmg || 0) * (100 + (stats.fireDmgInc || 0)) / 100);
+        let coldDmg = Math.floor((stats.coldDmg || 0) * (100 + (stats.coldDmgInc || 0)) / 100);
+        let ltnDmg = Math.floor((stats.ltnDmg || 0) * (100 + (stats.ltnDmgInc || 0)) / 100);
+        let darkDmg = stats.darkDmg || 0;
+
+        // Convert physical to elemental
+        if (effects.physToFire) {
+            const conv = Math.floor(dmg * effects.physToFire / 100);
+            dmg -= conv;
+            fireDmg += conv;
+        }
+        if (effects.physToCold) {
+            const conv = Math.floor(dmg * effects.physToCold / 100);
+            dmg -= conv;
+            coldDmg += conv;
+        }
+        if (effects.physToLightning) {
+            const conv = Math.floor(dmg * effects.physToLightning / 100);
+            dmg -= conv;
+            ltnDmg += conv;
+        }
+
+        // Apply armor to remaining physical damage
         dmg = Math.max(1, dmg - Math.floor(enemy.armor / 2));
 
-        const fireDmg = Math.floor((stats.fireDmg || 0) * (100 + (stats.fireDmgInc || 0)) / 100);
-        const coldDmg = Math.floor((stats.coldDmg || 0) * (100 + (stats.coldDmgInc || 0)) / 100);
-        const ltnDmg = Math.floor((stats.ltnDmg || 0) * (100 + (stats.ltnDmgInc || 0)) / 100);
-        const elem = fireDmg + coldDmg + ltnDmg + (stats.darkDmg || 0);
-        const total = dmg + elem;
+        // Apply elemental penetration (reduce enemy resistance effect)
+        const fireRes = Math.max(0, (enemy.fireRes || 0) - (effects.firePen || 0));
+        const coldRes = Math.max(0, (enemy.coldRes || 0) - (effects.coldPen || 0));
+        const ltnRes = Math.max(0, (enemy.ltnRes || 0) - (effects.lightningPen || 0));
+        fireDmg = Math.floor(fireDmg * (100 - fireRes) / 100);
+        coldDmg = Math.floor(coldDmg * (100 - coldRes) / 100);
+        ltnDmg = Math.floor(ltnDmg * (100 - ltnRes) / 100);
+
+        const elem = fireDmg + coldDmg + ltnDmg + darkDmg;
+        let total = dmg + elem;
+
+        // Apply damage
         enemy.hp -= total;
         this.msg(`${crit?'CRIT! ':''}${enemy.name}に${total}dmg`, crit?'c-rare':'');
 
-        // Life leech
-        if (stats.lifeLeech > 0 && dmg > 0) {
-            const leech = Math.max(1, Math.floor(dmg * stats.lifeLeech / 100));
+        // On-hit effects
+        if (effects.onHitBurn && enemy.hp > 0) {
+            enemy.burn = (enemy.burn || 0) + effects.onHitBurn;
+            this.msg(`${enemy.name}が燃えている!`, 'c-unique');
+        }
+        if (effects.onHitFreeze && randInt(1, 100) <= effects.onHitFreeze && enemy.hp > 0) {
+            enemy.frozen = true;
+            this.msg(`${enemy.name}が凍結!`, 'c-cyan');
+        }
+
+        // Life leech (use effect override if present)
+        const leechPercent = effects.lifeLeech || stats.lifeLeech;
+        if (leechPercent > 0 && dmg > 0) {
+            const leech = Math.max(1, Math.floor(dmg * leechPercent / 100));
             this.player.hp = Math.min(stats.maxHp, this.player.hp + leech);
+        }
+
+        // Cull check (instant kill low HP enemies)
+        if (effects.cull && enemy.hp > 0) {
+            const cullThreshold = enemy.maxHp * effects.cull / 100;
+            if (enemy.hp <= cullThreshold) {
+                enemy.hp = 0;
+                this.msg(`処刑発動!`, 'c-legend');
+            }
+        }
+
+        // Extra hit chance
+        if (effects.extraHit && randInt(1, 100) <= effects.extraHit && enemy.hp > 0) {
+            this.msg(`追加攻撃!`, 'c-unique');
+            this.combat(enemy);
+            return; // Don't process kill twice
         }
 
         if (enemy.hp <= 0) {
@@ -1079,13 +1205,33 @@ class Game {
             const exp = Math.floor(enemy.exp * (1 + expBonus / 100));
             this.player.exp += exp;
             this.player.gold += Math.floor(enemy.gold * (1 + (stats.goldFind || 0) / 100));
-            this.player.souls += enemy.soul;
-            this.msg(`+${exp}EXP +${enemy.soul}魂`, 'c-green');
+
+            // Soul gain with soulFind bonus
+            let soulGain = enemy.soul;
+            if (effects.soulFind) {
+                soulGain = Math.floor(soulGain * (100 + effects.soulFind) / 100);
+            }
+            if (effects.onKillSoul) {
+                soulGain += effects.onKillSoul;
+            }
+            this.player.souls += soulGain;
+
+            this.msg(`+${exp}EXP +${soulGain}魂`, 'c-green');
             this.dungeon.enemies = this.dungeon.enemies.filter(e => e !== enemy);
 
             // Life on kill
             if (stats.lifeOnKill > 0) {
                 this.player.hp = Math.min(stats.maxHp, this.player.hp + stats.lifeOnKill);
+            }
+
+            // On-kill buffs
+            if (effects.onKillRage) {
+                this.player.addBuff('rage', effects.onKillRage, 3);
+                this.msg(`狂乱発動! +${effects.onKillRage}%dmg`, 'c-unique');
+            }
+            if (effects.onKillHaste) {
+                this.player.addBuff('haste', effects.onKillHaste, 3);
+                this.msg(`疾風発動! +${effects.onKillHaste}命中`, 'c-unique');
             }
 
             this.checkLevelUp();
@@ -1127,19 +1273,83 @@ class Game {
 
     enemyTurn() {
         const stats = this.player.getStats();
+        const effects = this.player.getEquippedEffects();
+
+        // Process burn damage on all enemies
         for (const e of this.dungeon.enemies) {
+            if (e.burn > 0) {
+                e.hp -= e.burn;
+                this.msg(`${e.name}が${e.burn}炎上ダメ!`, 'c-unique');
+                e.burn = Math.floor(e.burn * 0.7); // Burn decays
+                if (e.burn < 1) e.burn = 0;
+            }
+        }
+        // Remove dead enemies from burn
+        this.dungeon.enemies = this.dungeon.enemies.filter(e => e.hp > 0);
+
+        // Calculate armor with low HP bonus
+        let armor = stats.armor;
+        if (effects.lowLifeDefense && this.player.hp < stats.maxHp * 0.35) {
+            armor += effects.lowLifeDefense;
+        }
+
+        for (const e of this.dungeon.enemies) {
+            // Skip frozen enemies
+            if (e.frozen) {
+                this.msg(`${e.name}は凍結中!`, 'c-cyan');
+                e.frozen = false;
+                continue;
+            }
+
             const dist = Math.abs(e.x - this.player.x) + Math.abs(e.y - this.player.y);
             if (dist === 1) {
-                if (randInt(1,100) <= stats.eva) { this.msg(`${e.name}回避！`,'c-green'); continue; }
-                if (randInt(1,100) <= stats.block) { this.msg(`${e.name}ブロック！`,'c-cyan'); continue; }
-                let phys = Math.max(1, randInt(e.atkMin, e.atkMax) - Math.floor(stats.armor/3));
+                // Evasion check
+                if (randInt(1,100) <= stats.eva) {
+                    this.msg(`${e.name}回避！`,'c-green');
+                    continue;
+                }
+                // Block check with heal effect
+                if (randInt(1,100) <= stats.block) {
+                    this.msg(`${e.name}ブロック！`,'c-cyan');
+                    if (effects.blockHeal) {
+                        this.player.hp = Math.min(stats.maxHp, this.player.hp + effects.blockHeal);
+                        this.msg(`ブロック回復 +${effects.blockHeal}HP`, 'c-green');
+                    }
+                    continue;
+                }
+
+                let phys = Math.max(1, randInt(e.atkMin, e.atkMax) - Math.floor(armor/3));
                 let elemFire = Math.floor((e.fireDmg||0)*(100-stats.fireRes)/100);
                 let elemCold = Math.floor((e.coldDmg||0)*(100-stats.coldRes)/100);
                 let elemLtn = Math.floor((e.ltnDmg||0)*(100-stats.ltnRes)/100);
                 let elemDark = Math.floor((e.darkDmg||0)*(100-stats.darkRes)/100);
                 let total = phys + elemFire + elemCold + elemLtn + elemDark;
+
+                // Damage to soul conversion
+                if (effects.damageToSoul && this.player.souls > 0) {
+                    const soulDmg = Math.floor(total * effects.damageToSoul / 100);
+                    const soulCost = Math.min(this.player.souls, soulDmg);
+                    total -= soulCost;
+                    this.player.souls -= soulCost;
+                    if (soulCost > 0) {
+                        this.msg(`魂で${soulCost}ダメ吸収!`, 'c-unique');
+                    }
+                }
+
                 this.player.hp -= total;
                 this.msg(`${e.name}から${total}dmg！`, 'c-red');
+
+                // Reflect damage
+                if (effects.reflect && total > 0) {
+                    const reflectDmg = Math.floor(total * effects.reflect / 100);
+                    e.hp -= reflectDmg;
+                    this.msg(`反射で${e.name}に${reflectDmg}dmg!`, 'c-unique');
+                    if (e.hp <= 0) {
+                        this.player.souls += e.soul;
+                        this.msg(`${e.name}撃破! +${e.soul}魂`, 'c-green');
+                    }
+                }
+
                 if (this.player.hp <= 0) {
                     this.handleDeath();
                     return;
@@ -1153,6 +1363,12 @@ class Game {
                 }
             }
         }
+
+        // Remove enemies killed by reflect
+        this.dungeon.enemies = this.dungeon.enemies.filter(e => e.hp > 0);
+
+        // Tick down buffs at end of turn
+        this.player.tickBuffs();
     }
 
     handleDeath() {
@@ -1234,6 +1450,22 @@ class Game {
         this.player.x = this.dungeon.startX;
         this.player.y = this.dungeon.startY;
         this.highestFloors[this.dungeonId] = Math.max(this.highestFloors[this.dungeonId] || 1, this.floor);
+
+        // Floor change HP regen
+        const stats = this.player.getStats();
+        const effects = this.player.getEquippedEffects();
+        let regen = stats.hpRegen || 0;
+        if (effects.hpRegenPercent) {
+            regen += Math.floor(stats.maxHp * effects.hpRegenPercent / 100);
+        }
+        if (regen > 0) {
+            const oldHp = this.player.hp;
+            this.player.hp = Math.min(stats.maxHp, this.player.hp + regen);
+            if (this.player.hp > oldHp) {
+                this.msg(`HP回復 +${this.player.hp - oldHp}`, 'c-green');
+            }
+        }
+
         this.msg(`--- B${this.floor}F ---`, 'c-cyan');
         this.save();
     }
@@ -1295,6 +1527,30 @@ class Player {
         this.returnFlames = 0;
         this.equipment = {};
         this.inventory = [];
+        this.buffs = []; // Temporary buffs from unique effects
+    }
+
+    // Add a temporary buff
+    addBuff(type, value, turns) {
+        // Check if same buff already exists, refresh duration if so
+        const existing = this.buffs.find(b => b.type === type);
+        if (existing) {
+            existing.value = Math.max(existing.value, value);
+            existing.turns = Math.max(existing.turns, turns);
+        } else {
+            this.buffs.push({type, value, turns});
+        }
+    }
+
+    // Get total buff value of a type
+    getBuffValue(type) {
+        return this.buffs.filter(b => b.type === type).reduce((sum, b) => sum + b.value, 0);
+    }
+
+    // Tick down buff durations (call at end of turn)
+    tickBuffs() {
+        for (const b of this.buffs) b.turns--;
+        this.buffs = this.buffs.filter(b => b.turns > 0);
     }
 
     getStats() {
@@ -1358,6 +1614,25 @@ class Player {
         return s.str >= (eq.reqStr||0) && s.dex >= (eq.reqDex||0) && s.int >= (eq.reqInt||0);
     }
 
+    // Collect all unique effects from equipped items
+    getEquippedEffects() {
+        const effects = {};
+        for (const slot of EQUIP_SLOTS) {
+            const eq = this.equipment[slot];
+            if (eq && eq.uniqueEffects) {
+                for (const k in eq.uniqueEffects) {
+                    // Stack numeric effects, or set boolean effects
+                    if (typeof eq.uniqueEffects[k] === 'boolean') {
+                        effects[k] = effects[k] || eq.uniqueEffects[k];
+                    } else {
+                        effects[k] = (effects[k] || 0) + eq.uniqueEffects[k];
+                    }
+                }
+            }
+        }
+        return effects;
+    }
+
     equip(eq, slot) {
         const type = EQUIP_TYPES[eq.type];
         const unequipped = [];
@@ -1390,7 +1665,8 @@ class Player {
             baseHp: this.baseHp, hp: this.hp, gold: this.gold, souls: this.souls,
             returnFlames: this.returnFlames,
             equipment: eq,
-            inventory: this.inventory.map(i => i.type === 'equip' ? {type:'equip',equip:i.equip.toJSON()} : i)
+            inventory: this.inventory.map(i => i.type === 'equip' ? {type:'equip',equip:i.equip.toJSON()} : i),
+            buffs: this.buffs
         };
     }
 
@@ -1404,13 +1680,14 @@ class Player {
             p.equipment[slot] = d.equipment[slot] ? Equipment.fromJSON(d.equipment[slot]) : null;
         }
         p.inventory = d.inventory.map(i => i.type === 'equip' ? {type:'equip',equip:Equipment.fromJSON(i.equip)} : i);
+        p.buffs = d.buffs || [];
         return p;
     }
 }
 
 // ==================== EQUIPMENT ====================
 class Equipment {
-    constructor(name, baseName, type, rarity, tier, stats, reqStr=0, reqDex=0, reqInt=0, setName='') {
+    constructor(name, baseName, type, rarity, tier, stats, reqStr=0, reqDex=0, reqInt=0, setName='', uniqueEffects=null, desc='') {
         this.name = name;
         this.baseName = baseName;
         this.type = type;
@@ -1423,6 +1700,8 @@ class Equipment {
         this.setName = setName;
         this.prefixes = [];
         this.suffixes = [];
+        this.uniqueEffects = uniqueEffects || {};
+        this.desc = desc;
     }
 
     getTotalStats() {
@@ -1459,12 +1738,13 @@ class Equipment {
             name: this.name, baseName: this.baseName, type: this.type,
             rarity: this.rarity, tier: this.tier, stats: this.stats,
             reqStr: this.reqStr, reqDex: this.reqDex, reqInt: this.reqInt,
-            setName: this.setName, prefixes: this.prefixes, suffixes: this.suffixes
+            setName: this.setName, prefixes: this.prefixes, suffixes: this.suffixes,
+            uniqueEffects: this.uniqueEffects, desc: this.desc
         };
     }
 
     static fromJSON(d) {
-        const eq = new Equipment(d.name, d.baseName, d.type, d.rarity, d.tier||'COMMON', d.stats, d.reqStr, d.reqDex, d.reqInt, d.setName||'');
+        const eq = new Equipment(d.name, d.baseName, d.type, d.rarity, d.tier||'COMMON', d.stats, d.reqStr, d.reqDex, d.reqInt, d.setName||'', d.uniqueEffects||{}, d.desc||'');
         eq.prefixes = d.prefixes || [];
         eq.suffixes = d.suffixes || [];
         return eq;
@@ -1503,7 +1783,7 @@ function generateEquipment(floor, dungeonId = 0) {
             const u = weightedRandom(available, weights);
             const stats = {...u.stats};
             if (u.neg) for (const k in u.neg) stats[k] = (stats[k]||0) + u.neg[k];
-            const eq = new Equipment(u.name, u.name, u.type, 'UNIQUE', 'COMMON', stats, u.reqStr||0, u.reqDex||0, u.reqInt||0);
+            const eq = new Equipment(u.name, u.name, u.type, 'UNIQUE', 'COMMON', stats, u.reqStr||0, u.reqDex||0, u.reqInt||0, '', u.effects||{}, u.desc||'');
             addAffixes(eq, 3, 3, floor, dungeonId);
             return eq;
         }
@@ -1716,7 +1996,7 @@ class Dungeon {
                 const bossRoom = rooms[rooms.length-1];
                 const bx = Math.floor((bossRoom.x1+bossRoom.x2)/2);
                 const by = Math.floor((bossRoom.y1+bossRoom.y2)/2);
-                this.enemies.push({...FINAL_BOSS, x: bx, y: by, hp: FINAL_BOSS.hp});
+                this.enemies.push({...FINAL_BOSS, x: bx, y: by, hp: FINAL_BOSS.hp, maxHp: FINAL_BOSS.hp});
             }
         } else {
             // Spawn enemies
@@ -1986,6 +2266,17 @@ function showItemDetail(idx) {
                 html += `<div class="${isNeg?'negative':''}">${formatStat(k)}: ${stats[k]>0?'+':''}${stats[k]}</div>`;
             }
         }
+        // Show unique effects
+        if (eq.uniqueEffects && Object.keys(eq.uniqueEffects).length > 0) {
+            html += `<div class="c-unique" style="margin-top:10px;">--- 特殊効果 ---</div>`;
+            for (const k in eq.uniqueEffects) {
+                html += `<div class="c-unique">${formatEffect(k, eq.uniqueEffects[k])}</div>`;
+            }
+        }
+        // Show description for uniques
+        if (eq.desc) {
+            html += `<div class="c-gray" style="margin-top:10px;font-style:italic;">"${eq.desc}"</div>`;
+        }
         html += `<button class="equip-btn" id="btn-equip-item" ${canEquip?'':'disabled'}>装備</button>`;
         html += `<button class="drop-btn" id="btn-drop-item">捨てる</button>`;
         detail.innerHTML = html;
@@ -2003,6 +2294,35 @@ function formatStat(k) {
         accuracy:'命中',lifeLeech:'ライフリーチ',lifeOnKill:'キル時HP',
         goldFind:'ゴールド発見',expBonus:'経験値ボーナス'};
     return names[k] || k;
+}
+
+function formatEffect(k, v) {
+    const effects = {
+        damageWhenLowHp: `低HP時ダメージ +${v}%`,
+        cull: `HP${v}%以下の敵を即死`,
+        extraHit: `${v}%の確率で追加攻撃`,
+        physToFire: `物理ダメの${v}%を炎に変換`,
+        physToCold: `物理ダメの${v}%を氷に変換`,
+        physToLightning: `物理ダメの${v}%を雷に変換`,
+        firePen: `炎貫通 ${v}%`,
+        coldPen: `氷貫通 ${v}%`,
+        lightningPen: `雷貫通 ${v}%`,
+        blockHeal: `ブロック時HP +${v}回復`,
+        reflect: `被ダメの${v}%を反射`,
+        cannotBeCrit: `クリティカル無効`,
+        lowLifeDefense: `低HP時防御 +${v}`,
+        damageToSoul: `被ダメの${v}%を魂で吸収`,
+        onKillRage: `キル時 +${v}%ダメバフ(3T)`,
+        onKillHaste: `キル時 +${v}命中バフ(3T)`,
+        onKillSoul: `キル時 +${v}魂`,
+        onHitBurn: `攻撃時に${v}/Tの炎上付与`,
+        onHitFreeze: `${v}%の確率で凍結付与`,
+        soulFind: `魂獲得 +${v}%`,
+        bonusExp: `経験値 +${v}%`,
+        hpRegenPercent: `フロア毎に最大HP${v}%回復`,
+        lifeLeech: `ライフリーチ ${v}%`
+    };
+    return effects[k] || `${k}: ${v}`;
 }
 
 function usePotion(idx) {
