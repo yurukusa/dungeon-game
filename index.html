@@ -474,6 +474,7 @@
         <div class="modal-content">
             <div class="modal-title">CHARACTER STATUS</div>
             <div id="status-content"></div>
+            <button class="use-btn" id="btn-status-to-stat" style="margin-bottom:10px;">ステ振り</button>
             <button class="close-btn" id="close-status">Close</button>
         </div>
     </div>
@@ -1414,8 +1415,14 @@ class Game {
 
         this.floor = 1;
         this.inTown = true;
+        this.dungeon = null;
         this.msg('倒れた……町に戻された', 'c-red');
         this.save();
+
+        // 町画面に切り替え
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('town-screen').style.display = 'block';
+        renderTown();
     }
 
     descend() {
@@ -2745,6 +2752,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('close-status').onclick = () => {
         document.getElementById('status-modal').classList.remove('active');
+    };
+
+    document.getElementById('btn-status-to-stat').onclick = () => {
+        document.getElementById('status-modal').classList.remove('active');
+        showStatAlloc();
     };
 
     document.getElementById('equipment-list').onclick = e => {
