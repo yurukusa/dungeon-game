@@ -1091,6 +1091,7 @@ class Game {
         this.deathCount = 0;
         this.tombDeepCleared = false;
         this.liberationEnd = false;
+        this.freeRecoveryUsed = false;  // 初回無料回収使用済みフラグ
     }
 
     getDungeonInfo() { return DUNGEONS[this.dungeonId] || DUNGEONS[0]; }
@@ -1108,6 +1109,7 @@ class Game {
         this.deathCount = 0;
         this.tombDeepCleared = false;
         this.liberationEnd = false;
+        this.freeRecoveryUsed = false;
         this.msg('青い炎の前に立っている……');
     }
 
@@ -1603,7 +1605,9 @@ class Game {
             this.msg(`『${info.name}』踏破！`, 'c-green');
             this.floor = 1;
             this.inTown = true;
+            this.resetPlayerLevel();  // ダンジョンクリア時もレベルリセット
             this.player.hp = this.player.getStats().maxHp;
+            this.msg('町に戻った。レベル1に戻り、HP全回復。', 'c-flame');
             this.save();
             return;
         }
@@ -1647,7 +1651,8 @@ class Game {
             lostEquipment: this.lostEquipment.map(eq => eq && eq.toJSON ? eq.toJSON() : eq),
             deathCount: this.deathCount,
             tombDeepCleared: this.tombDeepCleared,
-            liberationEnd: this.liberationEnd
+            liberationEnd: this.liberationEnd,
+            freeRecoveryUsed: this.freeRecoveryUsed
         };
         localStorage.setItem('dungeonSave', JSON.stringify(data));
     }
@@ -1675,6 +1680,7 @@ class Game {
             this.deathCount = data.deathCount || 0;
             this.tombDeepCleared = data.tombDeepCleared || false;
             this.liberationEnd = data.liberationEnd || false;
+            this.freeRecoveryUsed = data.freeRecoveryUsed || false;
             if (data.dungeon && !this.inTown) {
                 this.dungeon = Dungeon.fromJSON(data.dungeon);
             }
@@ -2842,14 +2848,19 @@ function showRecovery() {
     }
 
     let html = '<div style="margin-bottom:15px;">失った装備を魂で回収できます</div>';
+    if (!game.freeRecoveryUsed) {
+        html += '<div class="c-green" style="margin-bottom:10px;">※ 最初の1つは無料で回収できます（餞別）</div>';
+    }
     html += '<ul class="item-list">';
 
     lost.forEach((eq, idx) => {
         const cost = eq.calcRecoveryCost ? eq.calcRecoveryCost() : 10;
-        const canAfford = game.player.souls >= cost;
+        const isFree = !game.freeRecoveryUsed;
+        const canAfford = isFree || game.player.souls >= cost;
+        const costText = isFree ? '<span class="c-green">無料（餞別）</span>' : `${cost}魂 ${game.player.souls >= cost ? '' : '(魂不足)'}`;
         html += `<li class="item-row" style="${canAfford ? '' : 'opacity:0.5'}">
             <span class="${RARITY[eq.rarity].cls}">${eq.name}</span>
-            <div class="c-flame">コスト: ${cost}魂 ${canAfford ? '' : '(魂不足)'}</div>
+            <div class="c-flame">コスト: ${costText}</div>
             ${canAfford ? `<button class="use-btn" onclick="recoverEquip(${idx})">回収</button>` : ''}
         </li>`;
     });
@@ -2862,8 +2873,9 @@ function showRecovery() {
 function recoverEquip(idx) {
     const eq = game.lostEquipment[idx];
     const cost = eq.calcRecoveryCost ? eq.calcRecoveryCost() : 10;
+    const isFree = !game.freeRecoveryUsed;
 
-    if (game.player.souls < cost) {
+    if (!isFree && game.player.souls < cost) {
         game.msg('魂が足りません', 'c-red');
         return;
     }
@@ -2873,10 +2885,16 @@ function recoverEquip(idx) {
         return;
     }
 
-    game.player.souls -= cost;
+    if (isFree) {
+        game.freeRecoveryUsed = true;
+        game.msg(`${eq.name}を回収した（餞別）`, 'c-green');
+    } else {
+        game.player.souls -= cost;
+        game.msg(`${eq.name}を回収した（-${cost}魂）`, 'c-green');
+    }
+
     game.player.inventory.push({type: 'equip', equip: eq});
     game.lostEquipment.splice(idx, 1);
-    game.msg(`${eq.name}を回収した`, 'c-green');
 
     document.getElementById('recovery-modal').classList.remove('active');
     game.save();
