@@ -686,45 +686,95 @@ const EQUIP_TYPES = {
     ring: { name: 'Ring', slots: ['ringL','ringR'], bases: [{name:'アイアンリング',hp:6},{name:'ルビーリング',str:4},{name:'ダイヤモンドリング',crit:5}] }
 };
 
+// Affixes with ranges [min,max], power levels (1-3), minFloor, tags
 const PREFIXES = [
-    {name:'鋭い',stats:{dmgMin:2,dmgMax:4}},
-    {name:'炎の',stats:{fireDmg:5}},
-    {name:'氷の',stats:{coldDmg:5}},
-    {name:'雷の',stats:{ltnDmg:5}},
-    {name:'闇の',stats:{darkDmg:5}},
-    {name:'頑丈な',stats:{armor:8}},
-    {name:'活力の',stats:{hp:15}},
-    {name:'力の',stats:{str:5}},
-    {name:'技の',stats:{dex:5}},
-    {name:'知の',stats:{int:5}}
+    // Damage
+    {name:'鋭い',stats:{dmgMin:[1,5],dmgMax:[2,8]},weight:100,minFloor:1,power:1},
+    {name:'炎の',stats:{fireDmg:[3,15]},weight:80,minFloor:1,tags:['fire'],power:1},
+    {name:'氷の',stats:{coldDmg:[3,15]},weight:80,minFloor:1,tags:['cold'],power:1},
+    {name:'雷の',stats:{ltnDmg:[3,15]},weight:80,minFloor:1,tags:['lightning'],power:1},
+    {name:'闇の',stats:{darkDmg:[3,15]},weight:60,minFloor:5,tags:['dark'],power:1},
+    {name:'獰猛な',stats:{physDmgInc:[10,40]},weight:50,minFloor:8,power:2},
+    {name:'灼熱の',stats:{fireDmgInc:[10,40]},weight:40,minFloor:10,tags:['fire'],power:2},
+    {name:'凍える',stats:{coldDmgInc:[10,40]},weight:40,minFloor:10,tags:['cold'],power:2},
+    {name:'迅雷の',stats:{ltnDmgInc:[10,40]},weight:40,minFloor:10,tags:['lightning'],power:2},
+    // Defense
+    {name:'頑丈な',stats:{armor:[5,20]},weight:100,minFloor:1,power:1},
+    {name:'活力の',stats:{hp:[10,30]},weight:90,minFloor:1,power:1},
+    // Stats
+    {name:'力の',stats:{str:[3,10]},weight:80,minFloor:1,power:1},
+    {name:'技の',stats:{dex:[3,10]},weight:80,minFloor:1,power:1},
+    {name:'知の',stats:{int:[3,10]},weight:80,minFloor:1,power:1},
+    {name:'万能の',stats:{str:[2,6],dex:[2,6],int:[2,6]},weight:20,minFloor:15,power:3},
+    // High tier
+    {name:'猛る',stats:{physDmgInc:[25,60],crit:[3,8]},weight:15,minFloor:30,power:3},
+    {name:'業火の',stats:{fireDmg:[15,40],fireDmgInc:[15,35]},weight:12,minFloor:35,tags:['fire'],power:3},
+    {name:'絶対零度の',stats:{coldDmg:[15,40],coldDmgInc:[15,35]},weight:12,minFloor:35,tags:['cold'],power:3}
 ];
 const SUFFIXES = [
-    {name:'火耐性',stats:{fireRes:12}},
-    {name:'氷耐性',stats:{coldRes:12}},
-    {name:'雷耐性',stats:{ltnRes:12}},
-    {name:'闇耐性',stats:{darkRes:12}},
-    {name:'巨人',stats:{str:8}},
-    {name:'疾風',stats:{dex:8}},
-    {name:'会心',stats:{crit:5}},
-    {name:'回避',stats:{eva:10}},
-    {name:'吸血',stats:{lifeLeech:2}},
-    {name:'狩人',stats:{lifeOnKill:5}}
+    // Resist
+    {name:'火耐性',stats:{fireRes:[8,25]},weight:80,minFloor:1,tags:['fire'],power:1},
+    {name:'氷耐性',stats:{coldRes:[8,25]},weight:80,minFloor:1,tags:['cold'],power:1},
+    {name:'雷耐性',stats:{ltnRes:[8,25]},weight:80,minFloor:1,tags:['lightning'],power:1},
+    {name:'闇耐性',stats:{darkRes:[8,25]},weight:60,minFloor:5,tags:['dark'],power:1},
+    {name:'守護',stats:{fireRes:[5,12],coldRes:[5,12],ltnRes:[5,12]},weight:25,minFloor:15,power:2},
+    // Stats
+    {name:'巨人',stats:{str:[5,15]},weight:60,minFloor:5,power:2},
+    {name:'疾風',stats:{dex:[5,15]},weight:60,minFloor:5,power:2},
+    {name:'賢者',stats:{int:[5,15]},weight:60,minFloor:5,power:2},
+    // Combat
+    {name:'会心',stats:{crit:[3,10]},weight:50,minFloor:8,power:2},
+    {name:'破壊',stats:{critDmg:[15,50]},weight:40,minFloor:12,power:2},
+    {name:'回避',stats:{eva:[5,20]},weight:70,minFloor:1,power:1},
+    {name:'障壁',stats:{block:[3,12]},weight:60,minFloor:5,power:1},
+    {name:'命中',stats:{accuracy:[5,20]},weight:70,minFloor:1,power:1},
+    // Leech/Regen
+    {name:'吸血',stats:{lifeLeech:[1,4]},weight:30,minFloor:15,power:2},
+    {name:'狩人',stats:{lifeOnKill:[3,12]},weight:50,minFloor:8,power:2},
+    {name:'再生',stats:{hpRegen:[2,8]},weight:60,minFloor:5,power:1},
+    // Utility
+    {name:'発見',stats:{magicFind:[8,30]},weight:40,minFloor:10,power:1},
+    {name:'富豪',stats:{goldFind:[10,40]},weight:50,minFloor:5,power:1},
+    // High tier
+    {name:'全能',stats:{str:[8,20],dex:[8,20],int:[8,20]},weight:10,minFloor:40,power:3},
+    {name:'不死',stats:{lifeLeech:[3,6],hpRegen:[5,15],hp:[20,50]},weight:8,minFloor:50,power:3},
+    {name:'覇者',stats:{crit:[8,15],critDmg:[30,80]},weight:10,minFloor:45,power:3}
 ];
 
+// Dungeon tag bonus (multiplier for affix weight)
+const DUNGEON_TAG_BONUS = {
+    0: {},  // Abyss: no bonus
+    1: {fire: 3.0},  // Inferno: fire 3x
+    2: {cold: 2.5, dark: 2.0, lightning: 1.5}  // Frozen: cold/dark/lightning
+};
+
 const UNIQUES = [
+    // Tier 0: Strongest effects + heavy negatives (1F~)
     {name:'滅びの大剣',type:'greatsword',tier:0,stats:{dmgMin:45,dmgMax:80,crit:15,darkDmg:30},neg:{hp:-50,fireRes:-30},reqStr:20,desc:'振るう者の命をも削る破壊の剣'},
-    {name:'不死王の鎧',type:'body',tier:0,stats:{armor:80,hp:80,darkRes:50,hpRegen:8},neg:{fireRes:-50,ltnRes:-40,eva:-20},reqStr:18},
-    {name:'虚無の指輪',type:'ring',tier:0,stats:{dmgMin:10,dmgMax:20,darkDmg:25,crit:20},neg:{hp:-40,coldRes:-30}},
-    {name:'業火の剣',type:'sword',tier:1,stats:{dmgMin:15,dmgMax:28,fireDmg:35},neg:{coldRes:-30},reqStr:12},
-    {name:'氷結の杖',type:'staff',tier:1,stats:{dmgMin:10,dmgMax:22,coldDmg:40,int:12},neg:{fireRes:-35},reqInt:14},
-    {name:'狂戦士の兜',type:'helmet',tier:1,stats:{str:18,dmgMin:6,dmgMax:12,critDmg:35},neg:{armor:-15,eva:-15},reqStr:12},
-    {name:'呪われた短剣',type:'dagger',tier:1,stats:{dmgMin:10,dmgMax:20,crit:25,darkDmg:15},neg:{hp:-25},reqDex:10},
-    {name:'竜殺しの弓',type:'bow',tier:2,stats:{dmgMin:20,dmgMax:40,crit:15,fireDmg:20},neg:{armor:-10},reqDex:15},
-    {name:'全知の指輪',type:'ring',tier:2,stats:{int:15,fireDmg:12,coldDmg:12,ltnDmg:12},neg:{str:-5},reqInt:12},
-    {name:'疾風のブーツ',type:'boots',tier:2,stats:{eva:20,dex:10},neg:{armor:-8}},
-    {name:'血の指輪',type:'ring',tier:2,stats:{dmgMin:5,dmgMax:10,hpRegen:5},neg:{fireRes:-15}},
-    {name:'守護者の盾',type:'shield',tier:3,stats:{armor:20,block:25,hp:15},neg:{},reqStr:10},
-    {name:'旅人のベルト',type:'belt',tier:3,stats:{hp:20,goldFind:15,eva:8},neg:{}},
+    {name:'不死王の鎧',type:'body',tier:0,stats:{armor:80,hp:80,darkRes:50,hpRegen:8},neg:{fireRes:-50,ltnRes:-40,eva:-20},reqStr:18,desc:'かつての不死王が纏った鎧'},
+    {name:'虚無の指輪',type:'ring',tier:0,stats:{dmgMin:10,dmgMax:20,darkDmg:25,crit:20},neg:{hp:-40,coldRes:-30},desc:'全てを虚無に還す力を宿す'},
+    {name:'狂乱の仮面',type:'helmet',tier:0,stats:{str:25,dex:25,critDmg:50},neg:{armor:-30,hp:-30,block:-20},desc:'装備者を狂気に陥れる仮面'},
+    // Tier 1: Strong effects + moderate negatives (1F~)
+    {name:'業火の剣',type:'sword',tier:1,stats:{dmgMin:15,dmgMax:28,fireDmg:35},neg:{coldRes:-30},reqStr:12,desc:'燃え盛る炎の剣'},
+    {name:'氷結の杖',type:'staff',tier:1,stats:{dmgMin:10,dmgMax:22,coldDmg:40,int:12},neg:{fireRes:-35},reqInt:14,desc:'全てを凍らせる極寒の杖'},
+    {name:'狂戦士の兜',type:'helmet',tier:1,stats:{str:18,dmgMin:6,dmgMax:12,critDmg:35},neg:{armor:-15,eva:-15},reqStr:12,desc:'理性を捨て力を得る兜'},
+    {name:'呪われた短剣',type:'dagger',tier:1,stats:{dmgMin:10,dmgMax:20,crit:25,darkDmg:15},neg:{hp:-25},reqDex:10,desc:'命を削る代わりに強力な一撃'},
+    // Tier 2: Medium effects + light negatives (5F~)
+    {name:'竜殺しの弓',type:'bow',tier:2,stats:{dmgMin:20,dmgMax:40,crit:15,fireDmg:20},neg:{armor:-10},reqDex:15,desc:'伝説の竜を屠った弓'},
+    {name:'全知の指輪',type:'ring',tier:2,stats:{int:15,fireDmg:12,coldDmg:12,ltnDmg:12},neg:{str:-5},reqInt:12,desc:'魔力を極限まで高める指輪'},
+    {name:'疾風のブーツ',type:'boots',tier:2,stats:{eva:20,dex:10},neg:{armor:-8},desc:'軽さと引き換えに守りを捨てた靴'},
+    {name:'血の指輪',type:'ring',tier:2,stats:{dmgMin:5,dmgMax:10,hpRegen:5},neg:{fireRes:-15},desc:'生命力を吸い取り攻撃に変える'},
+    {name:'貫通の矢筒',type:'quiver',tier:2,stats:{dex:12,crit:10,accuracy:15,dmgMin:3,dmgMax:8},neg:{armor:-12},reqDex:12,desc:'どんな鎧も貫く矢を収めた筒'},
+    // Tier 3: Light effects + almost no negatives (10F~)
+    {name:'運命のアミュレット',type:'amulet',tier:3,stats:{crit:12,goldFind:25,expBonus:15},neg:{},desc:'幸運を引き寄せる護符'},
+    {name:'守護者の盾',type:'shield',tier:3,stats:{armor:20,block:25,hp:15},neg:{},reqStr:10,desc:'堅牢なる守りの盾'},
+    {name:'旅人のベルト',type:'belt',tier:3,stats:{hp:20,goldFind:15,eva:8},neg:{},desc:'数多の冒険者が愛用したベルト'},
+    {name:'賢者の手袋',type:'gloves',tier:3,stats:{int:10,coldDmg:8,fireRes:10},neg:{},reqInt:8,desc:'古の賢者が遺した手袋'},
+    // Tier 4: Modest effects + no negatives (20F~)
+    {name:'初心者の剣',type:'sword',tier:4,stats:{dmgMin:8,dmgMax:15,str:5},neg:{},reqStr:5,desc:'駆け出し冒険者に与えられる剣'},
+    {name:'見習いのローブ',type:'body',tier:4,stats:{armor:10,int:8,hp:10},neg:{},desc:'魔法を学ぶ者の衣'},
+    {name:'幸運のコイン',type:'amulet',tier:4,stats:{goldFind:20,crit:5},neg:{},desc:'少しだけ運が良くなるコイン'},
+    {name:'軽業師のブーツ',type:'boots',tier:4,stats:{eva:12,dex:5},neg:{},desc:'軽やかな足さばきを可能にする靴'}
 ];
 const UNIQUE_TIER_FLOORS = {0:1,1:1,2:5,3:10,4:20};
 
@@ -773,6 +823,7 @@ const ENEMIES_INFERNO = [
     {name:'インプ',char:'i',hp:32,atkMin:4,atkMax:10,fireDmg:12,armor:2,exp:25,gold:18,soul:3,minFloor:5},
     {name:'オーク',char:'o',hp:55,atkMin:10,atkMax:22,armor:10,exp:40,gold:30,soul:4,minFloor:8},
     {name:'ファイアビートル',char:'b',hp:45,atkMin:8,atkMax:16,fireDmg:15,armor:12,exp:50,gold:35,soul:4,minFloor:12},
+    {name:'スケルトン',char:'k',hp:70,atkMin:12,atkMax:20,armor:8,exp:55,gold:40,soul:5,minFloor:18},
     {name:'溶岩ゴーレム',char:'G',hp:120,atkMin:18,atkMax:35,fireDmg:25,armor:25,exp:100,gold:80,soul:8,minFloor:25},
     {name:'炎の精霊',char:'E',hp:80,atkMin:12,atkMax:22,fireDmg:35,armor:5,exp:90,gold:70,soul:7,minFloor:32},
     {name:'ファイアデーモン',char:'F',hp:150,atkMin:22,atkMax:40,fireDmg:40,armor:20,exp:150,gold:120,soul:12,minFloor:40},
@@ -782,13 +833,22 @@ const ENEMIES_FROZEN = [
     {name:'スライム',char:'s',hp:15,atkMin:2,atkMax:5,armor:0,exp:8,gold:5,soul:1,minFloor:1,maxFloor:15},
     {name:'ゴブリン',char:'g',hp:28,atkMin:5,atkMax:12,armor:4,exp:18,gold:14,soul:2,minFloor:1},
     {name:'ワイト',char:'w',hp:38,atkMin:6,atkMax:14,darkDmg:10,armor:4,exp:30,gold:22,soul:3,minFloor:5},
+    {name:'インプ',char:'i',hp:32,atkMin:4,atkMax:10,fireDmg:12,armor:2,exp:25,gold:18,soul:3,minFloor:8},
+    {name:'オーク',char:'o',hp:55,atkMin:10,atkMax:22,armor:10,exp:40,gold:30,soul:4,minFloor:12},
     {name:'フロストスパイダー',char:'a',hp:42,atkMin:7,atkMax:15,coldDmg:14,armor:3,exp:45,gold:32,soul:4,minFloor:18},
+    {name:'スケルトン',char:'k',hp:70,atkMin:12,atkMax:20,armor:8,exp:55,gold:40,soul:5,minFloor:22},
     {name:'ストームエレメンタル',char:'e',hp:55,atkMin:8,atkMax:16,ltnDmg:20,armor:5,exp:65,gold:50,soul:5,minFloor:28},
+    {name:'溶岩ゴーレム',char:'G',hp:120,atkMin:18,atkMax:35,fireDmg:25,armor:25,exp:100,gold:80,soul:8,minFloor:32},
     {name:'アイスゴーレム',char:'I',hp:130,atkMin:16,atkMax:32,coldDmg:28,armor:28,exp:110,gold:85,soul:8,minFloor:38},
+    {name:'炎の精霊',char:'E',hp:80,atkMin:12,atkMax:22,fireDmg:35,armor:5,exp:90,gold:70,soul:7,minFloor:42},
     {name:'リッチ',char:'L',hp:100,atkMin:15,atkMax:28,coldDmg:18,darkDmg:18,armor:12,exp:130,gold:100,soul:10,minFloor:48},
+    {name:'ファイアデーモン',char:'F',hp:150,atkMin:22,atkMax:40,fireDmg:40,armor:20,exp:150,gold:120,soul:12,minFloor:55},
     {name:'フロストジャイアント',char:'J',hp:200,atkMin:28,atkMax:50,coldDmg:35,armor:30,exp:180,gold:150,soul:15,minFloor:62},
     {name:'シェイド',char:'S',hp:90,atkMin:18,atkMax:32,darkDmg:40,armor:8,exp:160,gold:130,soul:12,minFloor:68},
+    {name:'サンダードレイク',char:'T',hp:180,atkMin:25,atkMax:45,ltnDmg:45,armor:22,exp:200,gold:170,soul:16,minFloor:75},
+    {name:'炎竜',char:'R',hp:250,atkMin:35,atkMax:65,fireDmg:50,armor:40,exp:300,gold:250,soul:25,minFloor:82},
     {name:'死霊竜',char:'N',hp:280,atkMin:38,atkMax:70,coldDmg:30,darkDmg:30,armor:38,exp:350,gold:300,soul:28,minFloor:88},
+    {name:'混沌の化身',char:'C',hp:350,atkMin:45,atkMax:80,fireDmg:25,coldDmg:25,ltnDmg:25,darkDmg:25,armor:45,exp:450,gold:400,soul:35,minFloor:94},
     {name:'古竜',char:'D',hp:400,atkMin:50,atkMax:90,fireDmg:40,coldDmg:40,armor:50,exp:500,gold:500,soul:40,minFloor:10}
 ];
 const FINAL_BOSS = {name:'虚無の王',char:'Ω',hp:5000,atkMin:80,atkMax:150,fireDmg:50,coldDmg:50,ltnDmg:40,darkDmg:60,armor:100,exp:10000,gold:10000,soul:500};
@@ -1430,7 +1490,7 @@ function generateEquipment(floor, dungeonId = 0) {
         const pieceName = pieceNames[randInt(0, pieceNames.length-1)];
         const piece = set.pieces[pieceName];
         const eq = new Equipment(pieceName, pieceName, piece.type, 'SET', 'COMMON', {...piece.stats}, piece.reqStr||0, piece.reqDex||0, piece.reqInt||0, setName);
-        addAffixes(eq, 3, 3, floor);
+        addAffixes(eq, 3, 3, floor, dungeonId);
         return eq;
     }
     if (rarity === 'SET') rarity = 'LEGEND';
@@ -1444,7 +1504,7 @@ function generateEquipment(floor, dungeonId = 0) {
             const stats = {...u.stats};
             if (u.neg) for (const k in u.neg) stats[k] = (stats[k]||0) + u.neg[k];
             const eq = new Equipment(u.name, u.name, u.type, 'UNIQUE', 'COMMON', stats, u.reqStr||0, u.reqDex||0, u.reqInt||0);
-            addAffixes(eq, 3, 3, floor);
+            addAffixes(eq, 3, 3, floor, dungeonId);
             return eq;
         }
         rarity = 'RARE';
@@ -1464,7 +1524,7 @@ function generateEquipment(floor, dungeonId = 0) {
         }
         const eq = new Equipment(base.name, base.name, type, 'LEGEND', tier, stats,
             Math.floor((base.reqStr||0)*TIER[tier].req), Math.floor((base.reqDex||0)*TIER[tier].req), Math.floor((base.reqInt||0)*TIER[tier].req));
-        addAffixes(eq, 3, 3, floor);
+        addAffixes(eq, 3, 3, floor, dungeonId);
         eq.name = eq.getFullName();
         return eq;
     }
@@ -1492,7 +1552,7 @@ function generateEquipment(floor, dungeonId = 0) {
         reqMult > 0 ? Math.floor((base.reqInt||0)*reqMult) : 0);
 
     const affixCount = RARITY[rarity].affixes;
-    addAffixes(eq, affixCount, affixCount, floor);
+    addAffixes(eq, affixCount, affixCount, floor, dungeonId);
     eq.name = eq.getFullName();
     return eq;
 }
@@ -1510,24 +1570,81 @@ function selectTier(floor) {
     return weightedRandom(available, weights);
 }
 
-function addAffixes(eq, numPre, numSuf, floor) {
-    const scale = 1 + floor * 0.08;
-    const availPre = [...PREFIXES];
+function calcAffixWeight(affix, floor, dungeonId = 0) {
+    // Min floor check
+    if (floor < (affix.minFloor || 1)) return 0;
+
+    let weight = affix.weight || 50;
+
+    // Dungeon tag bonus
+    const tagBonus = DUNGEON_TAG_BONUS[dungeonId] || {};
+    const tags = affix.tags || [];
+    for (const tag of tags) {
+        if (tagBonus[tag]) weight *= tagBonus[tag];
+    }
+
+    // High floor bonus for powerful affixes
+    const power = affix.power || 1;
+    if (power >= 2 && floor >= 20) weight *= 1.0 + (floor - 20) * 0.02;
+    if (power >= 3 && floor >= 40) weight *= 1.5;
+
+    return weight;
+}
+
+function rollAffixStat(value, floor) {
+    // If value is an array [min, max], roll a random value and scale with floor
+    if (Array.isArray(value)) {
+        const scale = 1 + floor * 0.05;
+        const min = value[0], max = value[1];
+        return Math.floor((min + Math.random() * (max - min)) * scale * (0.8 + Math.random() * 0.4));
+    }
+    // Old format: fixed value with scaling
+    return Math.floor(value * (1 + floor * 0.08) * (0.8 + Math.random() * 0.4));
+}
+
+function addAffixes(eq, numPre, numSuf, floor, dungeonId = 0) {
+    // Filter available prefixes by floor and calculate weights
+    const availPre = PREFIXES.filter(p => floor >= (p.minFloor || 1));
+    const preWeights = availPre.map(p => calcAffixWeight(p, floor, dungeonId));
+
+    const selectedPre = [];
     for (let i = 0; i < randInt(0, numPre); i++) {
         if (availPre.length === 0) break;
-        const idx = randInt(0, availPre.length-1);
-        const p = availPre.splice(idx, 1)[0];
+        // Weighted selection
+        const validWeights = preWeights.filter((w, idx) => !selectedPre.includes(idx) && w > 0);
+        if (validWeights.length === 0) break;
+
+        const validIndices = preWeights.map((w, idx) => ({w, idx})).filter(x => !selectedPre.includes(x.idx) && x.w > 0);
+        const selected = weightedRandom(validIndices.map(x => x.idx), validIndices.map(x => x.w));
+        selectedPre.push(selected);
+
+        const p = availPre[selected];
         const stats = {};
-        for (const k in p.stats) stats[k] = Math.floor(p.stats[k] * scale * (0.8 + Math.random()*0.4));
+        for (const k in p.stats) {
+            stats[k] = rollAffixStat(p.stats[k], floor);
+        }
         eq.prefixes.push({name: p.name, stats});
     }
-    const availSuf = [...SUFFIXES];
+
+    // Filter available suffixes
+    const availSuf = SUFFIXES.filter(s => floor >= (s.minFloor || 1));
+    const sufWeights = availSuf.map(s => calcAffixWeight(s, floor, dungeonId));
+
+    const selectedSuf = [];
     for (let i = 0; i < randInt(0, numSuf); i++) {
         if (availSuf.length === 0) break;
-        const idx = randInt(0, availSuf.length-1);
-        const s = availSuf.splice(idx, 1)[0];
+
+        const validIndices = sufWeights.map((w, idx) => ({w, idx})).filter(x => !selectedSuf.includes(x.idx) && x.w > 0);
+        if (validIndices.length === 0) break;
+
+        const selected = weightedRandom(validIndices.map(x => x.idx), validIndices.map(x => x.w));
+        selectedSuf.push(selected);
+
+        const s = availSuf[selected];
         const stats = {};
-        for (const k in s.stats) stats[k] = Math.floor(s.stats[k] * scale * (0.8 + Math.random()*0.4));
+        for (const k in s.stats) {
+            stats[k] = rollAffixStat(s.stats[k], floor);
+        }
         eq.suffixes.push({name: s.name, stats});
     }
 }
