@@ -449,6 +449,7 @@
                     <button class="action-btn" id="btn-stairs">Stairs</button>
                     <button class="action-btn flame" id="btn-return-town">帰還 <span class="return-items" id="return-count"></span></button>
                     <button class="action-btn" id="btn-save">Save</button>
+                    <button class="action-btn" id="btn-settings">設定</button>
                 </div>
             </div>
             <div id="side-panel">
@@ -583,13 +584,80 @@
 
     <!-- Auto Explore Modal -->
     <div class="modal" id="auto-modal">
-        <div class="modal-content" style="text-align:center;">
-            <div class="modal-title">自動探索</div>
-            <div id="auto-stats" style="margin:15px 0;"></div>
-            <div id="auto-status" class="c-cyan" style="margin:10px 0;">準備完了</div>
+        <div class="modal-content">
+            <div class="modal-title">自動探索設定</div>
+            <div id="auto-settings" style="margin:10px 0; text-align:left;">
+                <div class="stat-alloc-row">
+                    <span>探索先:</span>
+                    <select id="auto-dungeon" style="background:#1a1a2e;color:#fff;border:1px solid #4a4a6a;padding:5px;"></select>
+                </div>
+                <div class="stat-alloc-row">
+                    <span>最大階層:</span>
+                    <select id="auto-max-floor" style="background:#1a1a2e;color:#fff;border:1px solid #4a4a6a;padding:5px;"></select>
+                </div>
+                <div class="stat-alloc-row">
+                    <span>即ソウル化:</span>
+                    <select id="auto-pickup-rarity" style="background:#1a1a2e;color:#fff;border:1px solid #4a4a6a;padding:5px;">
+                        <option value="0">Normal未満</option>
+                        <option value="1">Magic未満</option>
+                        <option value="2">Rare未満</option>
+                        <option value="3">Unique未満</option>
+                    </select>
+                </div>
+                <div class="stat-alloc-row">
+                    <span>倉庫保管:</span>
+                    <select id="auto-stash-rarity" style="background:#1a1a2e;color:#fff;border:1px solid #4a4a6a;padding:5px;">
+                        <option value="0">Normal以上</option>
+                        <option value="1">Magic以上</option>
+                        <option value="2">Rare以上</option>
+                        <option value="3">Unique以上</option>
+                    </select>
+                </div>
+                <div class="stat-alloc-row">
+                    <span>帰還HP:</span>
+                    <select id="auto-hp-threshold" style="background:#1a1a2e;color:#fff;border:1px solid #4a4a6a;padding:5px;">
+                        <option value="20">20%以下</option>
+                        <option value="30" selected>30%以下</option>
+                        <option value="40">40%以下</option>
+                        <option value="50">50%以下</option>
+                    </select>
+                </div>
+            </div>
+            <div style="color:#888;font-size:11px;margin:10px 0;">即ソウル化: 未装着分を変換 / 倉庫保管: 帰還時保存</div>
+            <div id="auto-stats" style="margin:10px 0;"></div>
+            <div id="auto-status" class="c-cyan" style="margin:10px 0;"></div>
             <button class="use-btn" id="btn-start-auto">探索開始</button>
             <button class="close-btn" id="btn-stop-auto" style="display:none;">探索停止</button>
             <button class="close-btn" id="close-auto">閉じる</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal (accessible from dungeon) -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-title">探索設定</div>
+            <div style="margin:10px 0; text-align:left;">
+                <div class="stat-alloc-row">
+                    <span>即ソウル化:</span>
+                    <select id="settings-pickup-rarity" style="background:#1a1a2e;color:#fff;border:1px solid #4a4a6a;padding:5px;">
+                        <option value="0">Normal未満</option>
+                        <option value="1">Magic未満</option>
+                        <option value="2">Rare未満</option>
+                        <option value="3">Unique未満</option>
+                    </select>
+                </div>
+                <div class="stat-alloc-row">
+                    <span>倉庫保管:</span>
+                    <select id="settings-stash-rarity" style="background:#1a1a2e;color:#fff;border:1px solid #4a4a6a;padding:5px;">
+                        <option value="0">Normal以上</option>
+                        <option value="1">Magic以上</option>
+                        <option value="2">Rare以上</option>
+                        <option value="3">Unique以上</option>
+                    </select>
+                </div>
+            </div>
+            <div style="color:#888;font-size:11px;margin:10px 0;">即ソウル化: 未装着の低レア装備を自動変換<br>倉庫保管: 帰還時に指定レア度以上を倉庫へ</div>
+            <button class="close-btn" id="close-settings">閉じる</button>
         </div>
     </div>
 
@@ -608,7 +676,7 @@ const MAP_WIDTH = 30;
 const MAP_HEIGHT = 15;
 const ROOM_MIN = 4, ROOM_MAX = 7, MAX_ROOMS = 5;
 
-const TILE = { WALL: '#', FLOOR: '.', STAIRS: '>', PLAYER: '@', FLAME: '∴' };
+const TILE = { WALL: '#', FLOOR: '.', STAIRS: '>', PLAYER: '@', FLAME: '∴', FLAME_FLICKER: '☆' };
 
 // Dungeons
 const DUNGEONS = {
@@ -966,8 +1034,18 @@ class Town {
     toJSON() {
         return {
             level: this.level, totalSoulsOffered: this.totalSoulsOffered, firstVisit: this.firstVisit,
-            stash: this.stash.map(i => i.type === 'equip' ? {type:'equip',equip:i.equip.toJSON()} : i),
-            shopInventory: this.shopInventory.map(i => i.type === 'equip' ? {type:'equip',equip:i.equip.toJSON(),price:i.price} : i),
+            stash: this.stash.map(i => {
+                if (i.type === 'equip' && i.equip) {
+                    return {type:'equip', equip: i.equip.toJSON ? i.equip.toJSON() : i.equip};
+                }
+                return i;
+            }),
+            shopInventory: this.shopInventory.map(i => {
+                if (i.type === 'equip' && i.equip) {
+                    return {type:'equip', equip: i.equip.toJSON ? i.equip.toJSON() : i.equip, price: i.price};
+                }
+                return i;
+            }),
             shopRefreshFloor: this.shopRefreshFloor
         };
     }
@@ -976,8 +1054,22 @@ class Town {
         t.level = d.level || 0;
         t.totalSoulsOffered = d.totalSoulsOffered || 0;
         t.firstVisit = d.firstVisit !== false;
-        t.stash = (d.stash || []).map(i => i.type === 'equip' ? {type:'equip',equip:Equipment.fromJSON(i.equip)} : i);
-        t.shopInventory = (d.shopInventory || []).map(i => i.type === 'equip' ? {type:'equip',equip:Equipment.fromJSON(i.equip),price:i.price} : i);
+        t.stash = (d.stash || []).map(i => {
+            if (i.type === 'equip' && i.equip) {
+                try {
+                    return {type:'equip', equip: Equipment.fromJSON(i.equip)};
+                } catch(e) { return null; }
+            }
+            return i;
+        }).filter(i => i != null);
+        t.shopInventory = (d.shopInventory || []).map(i => {
+            if (i.type === 'equip' && i.equip) {
+                try {
+                    return {type:'equip', equip: Equipment.fromJSON(i.equip), price: i.price};
+                } catch(e) { return null; }
+            }
+            return i;
+        }).filter(i => i != null);
         t.shopRefreshFloor = d.shopRefreshFloor || 0;
         return t;
     }
@@ -1034,9 +1126,46 @@ class Game {
 
     returnToTown() {
         this.inTown = true;
+
+        // レベルリセット（ローグライク仕様）
+        this.resetPlayerLevel();
+
         this.player.hp = this.player.getStats().maxHp;
-        this.msg('町に戻った。HPが回復した。');
+        this.msg('町に戻った。レベル1に戻り、HP全回復。', 'c-flame');
+
+        // 自動倉庫保管: 設定レアリティ以上の装備を倉庫へ
+        if (this.town.hasFeature('stash') && autoSettings.stashRarity > 0) {
+            const rarityOrder = ['normal', 'magic', 'rare', 'unique', 'legend', 'set'];
+            let stashedCount = 0;
+            for (let i = this.player.inventory.length - 1; i >= 0; i--) {
+                const item = this.player.inventory[i];
+                if (item.type === 'equip' && this.town.stash.length < 100) {
+                    const rarityIdx = rarityOrder.indexOf(item.equip.rarity);
+                    if (rarityIdx >= autoSettings.stashRarity) {
+                        this.town.stash.push(item);
+                        this.player.inventory.splice(i, 1);
+                        stashedCount++;
+                    }
+                }
+            }
+            if (stashedCount > 0) {
+                this.msg(`${stashedCount}個を倉庫へ保管`, 'c-cyan');
+            }
+        }
+
         this.save();
+    }
+
+    resetPlayerLevel() {
+        // 町に戻るたびにレベル1にリセット（装備は保持）
+        this.player.level = 1;
+        this.player.exp = 0;
+        this.player.expNext = 30;
+        this.player.baseHp = 50;
+        this.player.baseStr = 10;
+        this.player.baseDex = 10;
+        this.player.baseInt = 10;
+        this.player.statPoints = 0;
     }
 
     msg(text, cls = '') {
@@ -1064,6 +1193,9 @@ class Game {
             if (nx === this.dungeon.stairsX && ny === this.dungeon.stairsY) {
                 this.msg('階段発見！[Stairs]で次へ', 'c-cyan');
             }
+            if (nx === this.dungeon.flameX && ny === this.dungeon.flameY) {
+                this.msg('☆炎の揺らぎ発見！[Flame]で焚火へ帰還', 'c-flame');
+            }
             this.enemyTurn();
         }
     }
@@ -1090,6 +1222,19 @@ class Game {
             if (this.player.inventory.length < 20) {
                 this.player.inventory.push(item);
                 this.msg(`${item.equip.name}`, RARITY[item.equip.rarity].cls);
+
+                // 即ソウル化: 町でsoulConvert解放済み & 設定レアリティ未満なら自動変換
+                if (this.town.hasFeature('soulConvert') && autoSettings.pickupRarity > 0) {
+                    const rarityOrder = ['normal', 'magic', 'rare', 'unique', 'legend', 'set'];
+                    const rarityIdx = rarityOrder.indexOf(item.equip.rarity);
+                    const isEquipped = Object.values(this.player.equipment).some(eq => eq && eq === item.equip);
+                    if (!isEquipped && rarityIdx < autoSettings.pickupRarity) {
+                        const souls = Math.max(1, Math.floor(item.equip.calcScore() / 5));
+                        this.player.souls += souls;
+                        this.player.inventory = this.player.inventory.filter(i => i !== item);
+                        this.msg(`→即ソウル化 +${souls}魂`, 'c-flame');
+                    }
+                }
             } else {
                 this.msg('持ち物満杯！', 'c-red');
                 this.dungeon.items.push(item);
@@ -1219,6 +1364,17 @@ class Game {
 
             this.msg(`+${exp}EXP +${soulGain}魂`, 'c-green');
             this.dungeon.enemies = this.dungeon.enemies.filter(e => e !== enemy);
+
+            // Equipment drop (10% base + exp bonus up to 20%)
+            const baseDropChance = 0.10;
+            const expBonus = Math.min(0.20, enemy.exp / 500);
+            const dropChance = baseDropChance + expBonus;
+            if (Math.random() < dropChance) {
+                const playerMf = stats.magicFind || 0;
+                const droppedEq = generateEquipment(this.floor, this.currentDungeon, playerMf);
+                this.dungeon.items.push({type:'equip', x: enemy.x, y: enemy.y, equip: droppedEq});
+                this.msg('装備ドロップ!', 'c-yellow');
+            }
 
             // Life on kill
             if (stats.lifeOnKill > 0) {
@@ -1375,16 +1531,16 @@ class Game {
     handleDeath() {
         this.deathCount++;
 
-        // Save lost equipment
+        // Save lost equipment (keep as Equipment instances)
         this.lostEquipment = [];
         for (const slot of EQUIP_SLOTS) {
             if (this.player.equipment[slot]) {
-                this.lostEquipment.push({...this.player.equipment[slot]});
+                this.lostEquipment.push(this.player.equipment[slot]);
             }
         }
         for (const item of this.player.inventory) {
-            if (item.type === 'equip') {
-                this.lostEquipment.push({...item.equip});
+            if (item.type === 'equip' && item.equip) {
+                this.lostEquipment.push(item.equip);
             }
         }
 
@@ -1488,7 +1644,7 @@ class Game {
             town: this.town.toJSON(),
             inTown: this.inTown,
             messages: this.messages,
-            lostEquipment: this.lostEquipment,
+            lostEquipment: this.lostEquipment.map(eq => eq && eq.toJSON ? eq.toJSON() : eq),
             deathCount: this.deathCount,
             tombDeepCleared: this.tombDeepCleared,
             liberationEnd: this.liberationEnd
@@ -1509,7 +1665,13 @@ class Game {
             this.town = Town.fromJSON(data.town || {});
             this.inTown = data.inTown !== false;
             this.messages = data.messages || [];
-            this.lostEquipment = data.lostEquipment || [];
+            // lostEquipmentをEquipmentインスタンスに復元
+            this.lostEquipment = (data.lostEquipment || []).map(eq => {
+                if (eq && typeof eq === 'object') {
+                    return Equipment.fromJSON(eq);
+                }
+                return eq;
+            }).filter(eq => eq != null);
             this.deathCount = data.deathCount || 0;
             this.tombDeepCleared = data.tombDeepCleared || false;
             this.liberationEnd = data.liberationEnd || false;
@@ -1569,7 +1731,7 @@ class Player {
             fireRes: 0, coldRes: 0, ltnRes: 0, darkRes: 0, hpRegen: 0,
             accuracy: 80, lifeLeech: 0, lifeOnKill: 0,
             physDmgInc: 0, fireDmgInc: 0, coldDmgInc: 0, ltnDmgInc: 0,
-            goldFind: 0, expBonus: 0
+            goldFind: 0, expBonus: 0, magicFind: 0
         };
 
         for (const slot of EQUIP_SLOTS) {
@@ -1663,7 +1825,8 @@ class Player {
     toJSON() {
         const eq = {};
         for (const slot of EQUIP_SLOTS) {
-            eq[slot] = this.equipment[slot] ? this.equipment[slot].toJSON() : null;
+            const e = this.equipment[slot];
+            eq[slot] = e ? (e.toJSON ? e.toJSON() : e) : null;
         }
         return {
             x: this.x, y: this.y, level: this.level, exp: this.exp, expNext: this.expNext,
@@ -1672,7 +1835,12 @@ class Player {
             baseHp: this.baseHp, hp: this.hp, gold: this.gold, souls: this.souls,
             returnFlames: this.returnFlames,
             equipment: eq,
-            inventory: this.inventory.map(i => i.type === 'equip' ? {type:'equip',equip:i.equip.toJSON()} : i),
+            inventory: this.inventory.map(i => {
+                if (i.type === 'equip' && i.equip) {
+                    return {type:'equip', equip: i.equip.toJSON ? i.equip.toJSON() : i.equip};
+                }
+                return i;
+            }),
             buffs: this.buffs
         };
     }
@@ -1684,9 +1852,22 @@ class Player {
             baseStr:d.baseStr,baseDex:d.baseDex,baseInt:d.baseInt,baseHp:d.baseHp,hp:d.hp,
             gold:d.gold,souls:d.souls||0,returnFlames:d.returnFlames||0});
         for (const slot of EQUIP_SLOTS) {
-            p.equipment[slot] = d.equipment[slot] ? Equipment.fromJSON(d.equipment[slot]) : null;
+            try {
+                p.equipment[slot] = d.equipment[slot] ? Equipment.fromJSON(d.equipment[slot]) : null;
+            } catch(e) {
+                p.equipment[slot] = null;
+            }
         }
-        p.inventory = d.inventory.map(i => i.type === 'equip' ? {type:'equip',equip:Equipment.fromJSON(i.equip)} : i);
+        p.inventory = (d.inventory || []).map(i => {
+            if (i.type === 'equip' && i.equip) {
+                try {
+                    return {type:'equip', equip: Equipment.fromJSON(i.equip)};
+                } catch(e) {
+                    return null;
+                }
+            }
+            return i;
+        }).filter(i => i != null);
         p.buffs = d.buffs || [];
         return p;
     }
@@ -1758,14 +1939,21 @@ class Equipment {
     }
 }
 
-function generateEquipment(floor, dungeonId = 0) {
+function generateEquipment(floor, dungeonId = 0, magicFind = 0) {
+    // magicFindでレアリティ確率を調整
+    // 基本: Normal:45%, Magic:30%, Rare:18%, Unique:3%, Legend:3%, Set:1%
+    const mfMult = 100 / (100 + magicFind);  // magicFind=100で0.5
+    const normalChance = 0.45 * mfMult;
+    const bonus = (0.45 - normalChance) / 5;  // 上位5レアリティに均等配分
+
     const roll = Math.random();
     let rarity;
-    if (roll < 0.45) rarity = 'NORMAL';
-    else if (roll < 0.75) rarity = 'MAGIC';
-    else if (roll < 0.93) rarity = 'RARE';
-    else if (roll < 0.96) rarity = 'UNIQUE';
-    else if (roll < 0.99) rarity = 'LEGEND';
+    let cumulative = normalChance;
+    if (roll < cumulative) rarity = 'NORMAL';
+    else if (roll < (cumulative += 0.30 + bonus)) rarity = 'MAGIC';
+    else if (roll < (cumulative += 0.18 + bonus)) rarity = 'RARE';
+    else if (roll < (cumulative += 0.03 + bonus)) rarity = 'UNIQUE';
+    else if (roll < (cumulative += 0.03 + bonus)) rarity = 'LEGEND';
     else rarity = 'SET';
 
     // Set
@@ -1840,6 +2028,25 @@ function generateEquipment(floor, dungeonId = 0) {
 
     const affixCount = RARITY[rarity].affixes;
     addAffixes(eq, affixCount, affixCount, floor, dungeonId);
+    eq.name = eq.getFullName();
+    return eq;
+}
+
+function generateLegend(floor, dungeonId = 0) {
+    // Legend装備を確定生成
+    const types = Object.keys(EQUIP_TYPES);
+    const type = types[randInt(0, types.length-1)];
+    const bases = EQUIP_TYPES[type].bases;
+    const base = bases[randInt(0, bases.length-1)];
+    const tier = floor < 10 ? 'MASTERWORK' : 'SUPREME';
+    const mult = TIER[tier].mult;
+    const stats = {};
+    for (const k in base) {
+        if (!['name','reqStr','reqDex','reqInt'].includes(k)) stats[k] = Math.floor((base[k]||0) * mult);
+    }
+    const eq = new Equipment(base.name, base.name, type, 'LEGEND', tier, stats,
+        Math.floor((base.reqStr||0)*TIER[tier].req), Math.floor((base.reqDex||0)*TIER[tier].req), Math.floor((base.reqInt||0)*TIER[tier].req));
+    addAffixes(eq, 3, 3, floor, dungeonId);
     eq.name = eq.getFullName();
     return eq;
 }
@@ -1944,6 +2151,7 @@ class Dungeon {
         this.items = [];
         this.stairsX = 0; this.stairsY = 0;
         this.startX = 0; this.startY = 0;
+        this.flameX = -1; this.flameY = -1;  // 炎の揺らぎ位置
     }
 
     generate(floor, dungeonId = 0, deepMode = false) {
@@ -1994,6 +2202,23 @@ class Dungeon {
             this.stairsX = Math.floor((last.x1+last.x2)/2);
             this.stairsY = Math.floor((last.y1+last.y2)/2);
             this.tiles[this.stairsY][this.stairsX] = TILE.STAIRS;
+
+            // 炎の揺らぎ: 10F毎（10F, 20F, 30F...）に階段の隣に設置
+            const info = DUNGEONS[dungeonId];
+            const dragonFloor = (info && info.dragonFloor) || 10;
+            if (floor >= dragonFloor && floor % 10 === 0) {
+                const dirs = [[1,0], [-1,0], [0,1], [0,-1]];
+                for (const [dx, dy] of dirs) {
+                    const fx = this.stairsX + dx;
+                    const fy = this.stairsY + dy;
+                    if (fx >= 0 && fx < MAP_WIDTH && fy >= 0 && fy < MAP_HEIGHT && this.tiles[fy][fx] === TILE.FLOOR) {
+                        this.tiles[fy][fx] = TILE.FLAME_FLICKER;
+                        this.flameX = fx;
+                        this.flameY = fy;
+                        break;
+                    }
+                }
+            }
         }
 
         // Boss floor
@@ -2008,7 +2233,8 @@ class Dungeon {
         } else {
             // Spawn enemies
             const enemyList = DUNGEON_ENEMIES[dungeonId] || ENEMIES_ABYSS;
-            const scale = deepMode ? 1 + floor / 99 * 1.5 : 1 + (floor - 1) * 0.15;
+            // Python版と同様: 通常モードはスケーリングなし、deep_modeのみ適用
+            const scale = deepMode ? 1 + floor / 99 * 1.5 : 1.0;
 
             for (let i = 1; i < rooms.length; i++) {
                 const r = rooms[i];
@@ -2063,6 +2289,29 @@ class Dungeon {
                 }
             }
         }
+
+        // Legend装備確定配置: 9F, 19F, 29F... または最終階層
+        const info = DUNGEONS[dungeonId];
+        const maxFloor = info ? info.maxFloor : 15;
+        const isLegendFloor = (floor % 10 === 9) || (floor === maxFloor && maxFloor > 1);
+        if (isLegendFloor && rooms.length > 1 && floor >= 8) {
+            const legendRoom = rooms[randInt(1, rooms.length - 1)];
+            const lx = randInt(legendRoom.x1 + 1, legendRoom.x2 - 1);
+            const ly = randInt(legendRoom.y1 + 1, legendRoom.y2 - 1);
+            if (!this.itemAt(lx, ly)) {
+                this.items.push({type:'equip', x:lx, y:ly, equip: generateLegend(floor, dungeonId)});
+            }
+        }
+
+        // 序盤(1-3F)にポーション確定配置
+        if (floor <= 3 && rooms.length > 0) {
+            const potRoom = rooms[randInt(0, rooms.length - 1)];
+            const px = randInt(potRoom.x1 + 1, potRoom.x2 - 1);
+            const py = randInt(potRoom.y1 + 1, potRoom.y2 - 1);
+            if (!this.itemAt(px, py)) {
+                this.items.push({type:'potion', x:px, y:py, heal: 15});
+            }
+        }
     }
 
     walkable(x, y) {
@@ -2075,19 +2324,33 @@ class Dungeon {
         return {
             tiles: this.tiles.map(row => row.join('')),
             enemies: this.enemies,
-            items: this.items.map(i => i.type === 'equip' ? {...i, equip: i.equip.toJSON()} : i),
+            items: this.items.map(i => {
+                if (i.type === 'equip' && i.equip) {
+                    return {...i, equip: i.equip.toJSON ? i.equip.toJSON() : i.equip};
+                }
+                return i;
+            }),
             stairsX: this.stairsX, stairsY: this.stairsY,
-            startX: this.startX, startY: this.startY
+            startX: this.startX, startY: this.startY,
+            flameX: this.flameX, flameY: this.flameY
         };
     }
 
     static fromJSON(d) {
         const dg = new Dungeon();
         dg.tiles = d.tiles.map(row => row.split(''));
-        dg.enemies = d.enemies;
-        dg.items = d.items.map(i => i.type === 'equip' ? {...i, equip: Equipment.fromJSON(i.equip)} : i);
+        dg.enemies = d.enemies || [];
+        dg.items = (d.items || []).map(i => {
+            if (i.type === 'equip' && i.equip) {
+                try {
+                    return {...i, equip: Equipment.fromJSON(i.equip)};
+                } catch(e) { return null; }
+            }
+            return i;
+        }).filter(i => i != null);
         dg.stairsX = d.stairsX; dg.stairsY = d.stairsY;
         dg.startX = d.startX; dg.startY = d.startY;
+        dg.flameX = d.flameX ?? -1; dg.flameY = d.flameY ?? -1;
         return dg;
     }
 }
@@ -2133,8 +2396,9 @@ function render() {
     const returnEl = document.getElementById('return-count');
     returnEl.textContent = returnCount > 0 ? `(${returnCount})` : '';
 
-    // Can return check (at start position or has return flames)
-    const canReturn = (game.player.x === game.dungeon.startX && game.player.y === game.dungeon.startY) || returnCount > 0;
+    // Can return check (at start position, at flame flicker, or has return flames)
+    const atFlame = game.dungeon.flameX >= 0 && game.player.x === game.dungeon.flameX && game.player.y === game.dungeon.flameY;
+    const canReturn = (game.player.x === game.dungeon.startX && game.player.y === game.dungeon.startY) || atFlame || returnCount > 0;
     document.getElementById('btn-return-town').disabled = !canReturn;
 
     // Map
@@ -2154,6 +2418,8 @@ function render() {
                 else mapHtml += '<span class="c-rare">$</span>';
             } else if (game.dungeon.tiles[y][x] === TILE.STAIRS) {
                 mapHtml += '<span class="c-cyan">></span>';
+            } else if (game.dungeon.tiles[y][x] === TILE.FLAME_FLICKER) {
+                mapHtml += '<span class="c-flame">☆</span>';
             } else {
                 mapHtml += game.dungeon.tiles[y][x];
             }
@@ -2701,7 +2967,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-return-town').onclick = () => {
         if (!game.inTown) {
             const atStart = game.player.x === game.dungeon.startX && game.player.y === game.dungeon.startY;
-            if (!atStart) {
+            const atFlame = game.dungeon.flameX >= 0 && game.player.x === game.dungeon.flameX && game.player.y === game.dungeon.flameY;
+            if (atFlame) {
+                game.msg('炎の揺らぎに導かれ、焚火へ戻った', 'c-flame');
+            } else if (!atStart) {
                 if (game.player.returnFlames > 0) {
                     game.player.returnFlames--;
                     game.msg('帰還の灯火を使用した', 'c-flame');
@@ -2721,6 +2990,24 @@ document.addEventListener('DOMContentLoaded', () => {
         game.save();
         game.msg('セーブしました！', 'c-green');
         render();
+    };
+
+    document.getElementById('btn-settings').onclick = () => {
+        // Show current settings
+        document.getElementById('settings-pickup-rarity').value = autoSettings.pickupRarity;
+        document.getElementById('settings-stash-rarity').value = autoSettings.stashRarity;
+        document.getElementById('settings-modal').classList.add('active');
+    };
+
+    document.getElementById('close-settings').onclick = () => {
+        // Save settings
+        autoSettings.pickupRarity = parseInt(document.getElementById('settings-pickup-rarity').value);
+        autoSettings.stashRarity = parseInt(document.getElementById('settings-stash-rarity').value);
+        document.getElementById('settings-modal').classList.remove('active');
+        if (!game.inTown) {
+            game.msg('設定を更新しました', 'c-cyan');
+            render();
+        }
     };
 
     // Town buttons
@@ -3033,15 +3320,67 @@ function allocStat(stat) {
 // ==================== AUTO EXPLORE ====================
 let autoExploreInterval = null;
 let autoExploreStats = { enemies: 0, items: 0, souls: 0, floors: 0 };
+let autoSettings = { dungeonId: 0, maxFloor: 15, pickupRarity: 0, stashRarity: 2, hpThreshold: 30 };
 
 function showAutoExplore() {
     autoExploreStats = { enemies: 0, items: 0, souls: 0, floors: 0 };
+
+    // Initialize dungeon dropdown
+    const dungeonSelect = document.getElementById('auto-dungeon');
+    dungeonSelect.innerHTML = '';
+    for (let id = 0; id <= 2; id++) {
+        if (id === 0 || game.dungeonsCleared.includes(id - 1)) {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = DUNGEONS[id].name;
+            dungeonSelect.appendChild(opt);
+        }
+    }
+    dungeonSelect.value = autoSettings.dungeonId;
+
+    // Initialize max floor dropdown
+    updateMaxFloorOptions();
+
+    // Set other values
+    document.getElementById('auto-pickup-rarity').value = autoSettings.pickupRarity;
+    document.getElementById('auto-stash-rarity').value = autoSettings.stashRarity;
+    document.getElementById('auto-hp-threshold').value = autoSettings.hpThreshold;
+
+    // Event listeners
+    dungeonSelect.onchange = () => {
+        autoSettings.dungeonId = parseInt(dungeonSelect.value);
+        updateMaxFloorOptions();
+    };
+
     updateAutoExploreUI();
     document.getElementById('btn-start-auto').style.display = 'block';
     document.getElementById('btn-stop-auto').style.display = 'none';
     document.getElementById('close-auto').style.display = 'block';
     document.getElementById('auto-status').textContent = '準備完了';
     document.getElementById('auto-modal').classList.add('active');
+}
+
+function updateMaxFloorOptions() {
+    const dungeonId = parseInt(document.getElementById('auto-dungeon').value);
+    const maxFloorSelect = document.getElementById('auto-max-floor');
+    const highest = game.highestFloors[dungeonId] || 1;
+    const dungeonMax = DUNGEONS[dungeonId].maxFloor;
+    const limit = Math.min(highest, dungeonMax);
+
+    maxFloorSelect.innerHTML = '';
+    for (let f = 5; f <= limit; f += 5) {
+        const opt = document.createElement('option');
+        opt.value = f;
+        opt.textContent = f + 'F';
+        maxFloorSelect.appendChild(opt);
+    }
+    if (limit % 5 !== 0 || limit < 5) {
+        const opt = document.createElement('option');
+        opt.value = limit;
+        opt.textContent = limit + 'F';
+        maxFloorSelect.appendChild(opt);
+    }
+    maxFloorSelect.value = Math.min(autoSettings.maxFloor, limit);
 }
 
 function updateAutoExploreUI() {
@@ -3054,13 +3393,18 @@ function updateAutoExploreUI() {
 }
 
 function startAutoExplore() {
+    // Save settings from UI
+    autoSettings.dungeonId = parseInt(document.getElementById('auto-dungeon').value);
+    autoSettings.maxFloor = parseInt(document.getElementById('auto-max-floor').value);
+    autoSettings.pickupRarity = parseInt(document.getElementById('auto-pickup-rarity').value);
+    autoSettings.stashRarity = parseInt(document.getElementById('auto-stash-rarity').value);
+    autoSettings.hpThreshold = parseInt(document.getElementById('auto-hp-threshold').value);
+
     // Enter dungeon if in town
     if (game.inTown) {
-        // Use highest available dungeon that is unlocked
-        let dungeonId = 0;
-        if (game.dungeonsCleared.includes(0)) dungeonId = 1;
-        if (game.dungeonsCleared.includes(1)) dungeonId = 2;
-        game.enterDungeon(dungeonId);
+        game.enterDungeon(autoSettings.dungeonId);
+        document.getElementById('town-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
     }
 
     document.getElementById('btn-start-auto').style.display = 'none';
@@ -3069,13 +3413,38 @@ function startAutoExplore() {
     document.getElementById('auto-status').textContent = '探索中...';
 
     autoExploreInterval = setInterval(() => {
-        if (game.gameOver || game.inTown) {
+        if (game.gameOver) {
             stopAutoExplore();
             return;
         }
+        if (game.inTown) {
+            // Process inventory in town then re-enter
+            autoProcessTownInventory();
+            game.enterDungeon(autoSettings.dungeonId);
+            document.getElementById('town-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+        }
         autoExploreStep();
         updateAutoExploreUI();
-    }, 200);
+        render();
+    }, 150);
+}
+
+function autoProcessTownInventory() {
+    const p = game.player;
+    const rarityOrder = ['normal', 'magic', 'rare', 'unique', 'legend', 'set'];
+
+    // Move items to stash if rarity >= stashRarity
+    for (let i = p.inventory.length - 1; i >= 0; i--) {
+        const item = p.inventory[i];
+        if (item.type === 'equip' && game.town.stash.length < 100) {
+            const rarityIdx = rarityOrder.indexOf(item.equip.rarity);
+            if (rarityIdx >= autoSettings.stashRarity) {
+                game.town.stash.push(item);
+                p.inventory.splice(i, 1);
+            }
+        }
+    }
 }
 
 function stopAutoExplore() {
@@ -3095,18 +3464,47 @@ function autoExploreStep() {
 
     const p = game.player;
     const d = game.dungeon;
+    const stats = p.getStats();
+    const hpThreshold = autoSettings.hpThreshold / 100;
+    const rarityOrder = ['normal', 'magic', 'rare', 'unique', 'legend', 'set'];
+    let seekFlame = false;  // Flag to prioritize moving to flame flicker
 
     // Check HP - return if low
-    const stats = p.getStats();
-    if (p.hp < stats.maxHp * 0.3) {
+    if (p.hp < stats.maxHp * hpThreshold) {
         // Use potion if available
         const potionIdx = p.inventory.findIndex(i => i.type === 'potion');
         if (potionIdx >= 0) {
             const potion = p.inventory[potionIdx];
             p.hp = Math.min(stats.maxHp, p.hp + potion.heal);
             p.inventory.splice(potionIdx, 1);
-        } else {
-            // Return to town
+        } else if (d.flameX >= 0 && p.x === d.flameX && p.y === d.flameY) {
+            // Use flame flicker (free return)
+            game.returnToTown();
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('town-screen').style.display = 'block';
+            renderTown();
+            return;
+        } else if (p.returnFlames > 0) {
+            // Use return flame
+            p.returnFlames--;
+            game.returnToTown();
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('town-screen').style.display = 'block';
+            renderTown();
+            return;
+        } else if (d.flameX >= 0) {
+            // No potion, no return flames, but flame exists - seek it
+            seekFlame = true;
+        }
+        // Continue fighting if no escape
+    }
+
+    // Check max floor reached - try flame flicker first, then return flames
+    if (game.floor >= autoSettings.maxFloor && p.x === d.stairsX && p.y === d.stairsY) {
+        if (d.flameX >= 0) {
+            // Flame exists, need to move to it first - will be handled below
+        } else if (p.returnFlames > 0) {
+            p.returnFlames--;
             game.returnToTown();
             stopAutoExplore();
             document.getElementById('game-screen').style.display = 'none';
@@ -3114,6 +3512,16 @@ function autoExploreStep() {
             renderTown();
             return;
         }
+    }
+
+    // At flame flicker and max floor reached - use it
+    if (game.floor >= autoSettings.maxFloor && d.flameX >= 0 && p.x === d.flameX && p.y === d.flameY && d.enemies.length === 0) {
+        game.returnToTown();
+        stopAutoExplore();
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('town-screen').style.display = 'block';
+        renderTown();
+        return;
     }
 
     // Find nearest enemy
@@ -3138,21 +3546,34 @@ function autoExploreStep() {
         }
     }
 
-    // Decide target
+    // Decide target: seekFlame > enemy > item > flame (at max floor) > stairs (only if no items left)
     let targetX, targetY;
-    if (nearestEnemy && nearestDist <= 6) {
+    if (seekFlame && d.flameX >= 0) {
+        // HP low, need to find flame flicker
+        targetX = d.flameX;
+        targetY = d.flameY;
+    } else if (nearestEnemy && nearestDist <= 6) {
         targetX = nearestEnemy.x;
         targetY = nearestEnemy.y;
-    } else if (nearestItem && p.inventory.length < 18) {
+    } else if (nearestItem && p.inventory.length < 20) {
         targetX = nearestItem.x;
         targetY = nearestItem.y;
-    } else if (d.enemies.length === 0) {
-        // Go to stairs
-        targetX = d.stairsX;
-        targetY = d.stairsY;
     } else if (nearestEnemy) {
         targetX = nearestEnemy.x;
         targetY = nearestEnemy.y;
+    } else if (d.items.length === 0) {
+        // No enemies, no items - head to flame (if max floor) or stairs
+        if (game.floor >= autoSettings.maxFloor && d.flameX >= 0) {
+            targetX = d.flameX;
+            targetY = d.flameY;
+        } else {
+            targetX = d.stairsX;
+            targetY = d.stairsY;
+        }
+    } else if (nearestItem) {
+        // Still items, but inventory full - try to soul convert
+        targetX = nearestItem.x;
+        targetY = nearestItem.y;
     } else {
         targetX = d.stairsX;
         targetY = d.stairsY;
@@ -3161,6 +3582,7 @@ function autoExploreStep() {
     // Move toward target
     const oldEnemyCount = d.enemies.length;
     const oldSouls = p.souls;
+    const oldItems = p.inventory.length;
 
     let dx = 0, dy = 0;
     if (targetX > p.x) dx = 1;
@@ -3179,6 +3601,24 @@ function autoExploreStep() {
         game.move(0, dy);
     }
 
+    // After picking up equipment, apply pickup rarity (convert low rarity to souls)
+    if (p.inventory.length > oldItems && game.town.hasFeature('soulConvert')) {
+        for (let i = p.inventory.length - 1; i >= 0; i--) {
+            const item = p.inventory[i];
+            if (item.type === 'equip') {
+                const rarityIdx = rarityOrder.indexOf(item.equip.rarity);
+                // Check if equipped
+                const isEquipped = Object.values(p.equipment).some(eq => eq && eq === item.equip);
+                if (!isEquipped && rarityIdx < autoSettings.pickupRarity) {
+                    // Convert to souls
+                    const souls = Math.max(1, Math.floor(item.equip.calcScore() / 5));
+                    p.souls += souls;
+                    p.inventory.splice(i, 1);
+                }
+            }
+        }
+    }
+
     // Track stats
     if (d.enemies.length < oldEnemyCount) {
         autoExploreStats.enemies += (oldEnemyCount - d.enemies.length);
@@ -3187,13 +3627,13 @@ function autoExploreStep() {
         autoExploreStats.souls += (p.souls - oldSouls);
     }
 
-    // Check if on stairs
-    if (p.x === d.stairsX && p.y === d.stairsY && d.enemies.length === 0) {
-        game.descend();
-        autoExploreStats.floors++;
+    // Check if on stairs - only descend if no items and no enemies
+    if (p.x === d.stairsX && p.y === d.stairsY && d.enemies.length === 0 && d.items.length === 0) {
+        if (game.floor < autoSettings.maxFloor) {
+            game.descend();
+            autoExploreStats.floors++;
+        }
     }
-
-    render();
 }
 </script>
 </body>
