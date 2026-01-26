@@ -3818,6 +3818,13 @@ function renderStatus() {
         <div class="stat-row"><span class="stat-label">氷耐性</span><span class="stat-value c-cyan">${s.coldRes}%</span></div>
         <div class="stat-row"><span class="stat-label">雷耐性</span><span class="stat-value c-rare">${s.ltnRes}%</span></div>
         <div class="stat-row"><span class="stat-label">闇耐性</span><span class="stat-value c-legend">${s.darkRes}%</span></div>
+        <div style="margin:15px 0;color:#f1c40f;">--- 回復・その他 ---</div>
+        <div class="stat-row"><span class="stat-label">ライフリーチ</span><span class="stat-value">${s.lifeLeech}%</span></div>
+        <div class="stat-row"><span class="stat-label">キル時HP</span><span class="stat-value">+${s.lifeOnKill}</span></div>
+        <div class="stat-row"><span class="stat-label">HP再生</span><span class="stat-value">+${s.hpRegen}/階</span></div>
+        <div class="stat-row"><span class="stat-label">ゴールド増</span><span class="stat-value c-rare">+${s.goldFind}%</span></div>
+        <div class="stat-row"><span class="stat-label">経験値増</span><span class="stat-value c-green">+${s.expBonus}%</span></div>
+        <div class="stat-row"><span class="stat-label">MF</span><span class="stat-value c-magic">+${s.magicFind}%</span></div>
     `;
     document.getElementById('status-content').innerHTML = html;
 }
