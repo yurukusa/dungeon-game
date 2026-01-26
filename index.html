@@ -1033,7 +1033,7 @@ const EQUIP_TYPES = {
     dagger: { name: 'Dagger', slots: ['mainHand','offHand'], bases: [{name:'ダガー',dmgMin:2,dmgMax:7,reqDex:6,crit:8},{name:'スティレット',dmgMin:3,dmgMax:9,reqDex:10,crit:12}] },
     wand: { name: 'Wand', slots: ['mainHand','offHand'], bases: [{name:'ワンド',dmgMin:2,dmgMax:5,reqInt:8,fireDmg:4},{name:'セプター',dmgMin:3,dmgMax:7,reqInt:12,coldDmg:5}] },
     greatsword: { name: 'Greatsword', slots: ['mainHand'], twoHand: true, bases: [{name:'グレートソード',dmgMin:10,dmgMax:24,block:8,reqStr:15}] },
-    bow: { name: 'Bow', slots: ['mainHand'], twoHand: true, bases: [{name:'ショートボウ',dmgMin:4,dmgMax:12,reqDex:8},{name:'ロングボウ',dmgMin:6,dmgMax:16,reqDex:14}] },
+    bow: { name: 'Bow', slots: ['mainHand'], twoHand: true, bases: [{name:'ショートボウ',dmgMin:4,dmgMax:12,accuracy:10,crit:5,attackSpeed:15,reqDex:8},{name:'ロングボウ',dmgMin:6,dmgMax:16,accuracy:15,crit:10,reqDex:14}] },
     staff: { name: 'Staff', slots: ['mainHand'], twoHand: true, bases: [{name:'スタッフ',dmgMin:5,dmgMax:14,ltnDmg:4,reqInt:10}] },
     shield: { name: 'Shield', slots: ['offHand'], bases: [{name:'バックラー',armor:10,block:15,reqStr:6},{name:'カイトシールド',armor:20,block:22,reqStr:12}] },
     quiver: { name: 'Quiver', slots: ['offHand'], bases: [{name:'レザークィヴァー',dex:3,accuracy:5,reqDex:6},{name:'シャープシュータークィヴァー',dex:5,crit:4,accuracy:8,reqDex:10}] },
@@ -2997,6 +2997,7 @@ function addAffixesLegend(eq, minTotal, maxTotal, floor, dungeonId = 0) {
             const affixData = buildTieredAffixStats(p, legendFloor, true);
             // 1.5倍ボーナス適用
             for (const k in affixData.stats) affixData.stats[k] = Math.floor(affixData.stats[k] * 1.5);
+            affixData.isPowerful = true;  // ★表示用フラグ
             eq.prefixes.push(affixData);
             forcedCount++;
         } else {
@@ -3006,6 +3007,7 @@ function addAffixesLegend(eq, minTotal, maxTotal, floor, dungeonId = 0) {
             usedSufNames.push(s.name);
             const affixData = buildTieredAffixStats(s, legendFloor, false);
             for (const k in affixData.stats) affixData.stats[k] = Math.floor(affixData.stats[k] * 1.5);
+            affixData.isPowerful = true;  // ★表示用フラグ
             eq.suffixes.push(affixData);
             forcedCount++;
         }
@@ -3239,6 +3241,12 @@ function addAffixesGuaranteed(eq, minTotal, maxTotal, floor, dungeonId = 0) {
     const totalAffixes = randInt(minTotal, maxTotal);
     if (totalAffixes === 0) return;
 
+    // 6mod強制: 必ずPrefix3 + Suffix3
+    if (totalAffixes === 6) {
+        addAffixes(eq, 3, 3, floor, dungeonId);
+        return;
+    }
+
     // Distribute between prefixes and suffixes (max 3 each)
     const maxPre = Math.min(3, totalAffixes);
     const minPre = Math.max(0, totalAffixes - 3);  // At least this many prefixes needed
@@ -3392,8 +3400,14 @@ class Dungeon {
                         if (available.length > 0) {
                             const weights = available.map((e, idx) => calcEnemyWeight(e, idx, floor, dungeonId));
                             const template = weightedRandom(available, weights);
+                            // エリートモンスター判定（scale >= 5.0）
+                            const isElite = scale >= 5.0;
+                            const eliteSoulMult = isElite ? 2 : 1;
+                            const eliteExpMult = isElite ? 1.5 : 1;
                             this.enemies.push({
-                                x: ex, y: ey, name: template.name, char: template.char,
+                                x: ex, y: ey,
+                                name: isElite ? `古代の${template.name}` : template.name,
+                                char: template.char,
                                 hp: Math.floor(template.hp * scale), maxHp: Math.floor(template.hp * scale),
                                 atkMin: Math.floor(template.atkMin * scale), atkMax: Math.floor(template.atkMax * scale),
                                 armor: Math.floor((template.armor||0) * scale),
@@ -3401,8 +3415,10 @@ class Dungeon {
                                 coldDmg: Math.floor((template.coldDmg||0) * scale),
                                 ltnDmg: Math.floor((template.ltnDmg||0) * scale),
                                 darkDmg: Math.floor((template.darkDmg||0) * scale),
-                                exp: Math.floor(template.exp * scale), gold: Math.floor(template.gold * scale),
-                                soul: Math.floor((template.soul||1) * scale)
+                                exp: Math.floor(template.exp * scale * eliteExpMult),
+                                gold: Math.floor(template.gold * scale),
+                                soul: Math.floor((template.soul||1) * scale * eliteSoulMult),
+                                isElite: isElite
                             });
                         }
                     }
@@ -3610,7 +3626,8 @@ function render() {
                 mapHtml += '<span class="c-green">@</span>';
             } else if (game.dungeon.enemyAt(x, y)) {
                 const e = game.dungeon.enemyAt(x, y);
-                mapHtml += `<span class="c-red">${e.char}</span>`;
+                const enemyColor = e.isElite ? 'c-yellow' : 'c-red';
+                mapHtml += `<span class="${enemyColor}">${e.char}</span>`;
             } else if (game.dungeon.itemAt(x, y)) {
                 const item = game.dungeon.itemAt(x, y);
                 if (item.type === 'equip') mapHtml += '<span class="c-rare">[</span>';
@@ -5064,8 +5081,8 @@ function renderForgeSelected() {
     // Affixes
     if (eq.prefixes.length || eq.suffixes.length) {
         html += '<div class="c-cyan" style="font-size:0.7em;margin-top:5px;">アフィックス:</div>';
-        for (const p of eq.prefixes) html += `<div style="font-size:0.7em;">・${p.name}</div>`;
-        for (const s of eq.suffixes) html += `<div style="font-size:0.7em;">・${s.name}</div>`;
+        for (const p of eq.prefixes) html += `<div style="font-size:0.7em;">${p.isPowerful ? '<span class="c-yellow">★</span>' : '・'}${p.name}</div>`;
+        for (const s of eq.suffixes) html += `<div style="font-size:0.7em;">${s.isPowerful ? '<span class="c-yellow">★</span>' : '・'}${s.name}</div>`;
     }
 
     document.getElementById('forge-selected').innerHTML = html;
