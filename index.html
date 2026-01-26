@@ -4370,13 +4370,13 @@ function autoEquip() {
     for (let i = 0; i < p.inventory.length; i++) {
         const item = p.inventory[i];
         if (item.type === 'equip') {
-            allEquips.push({ source: 'inventory', idx: i, item, eq: item.equip });
+            allEquips.push({ source: 'inventory', idx: i, item, eq: item.equip, used: false });
         }
     }
     for (let i = 0; i < game.town.stash.length; i++) {
         const item = game.town.stash[i];
         if (item.type === 'equip') {
-            allEquips.push({ source: 'stash', idx: i, item, eq: item.equip });
+            allEquips.push({ source: 'stash', idx: i, item, eq: item.equip, used: false });
         }
     }
 
@@ -4395,6 +4395,7 @@ function autoEquip() {
 
         // Evaluate candidates
         for (const entry of allEquips) {
+            if (entry.used) continue; // Skip already equipped items
             const eq = entry.eq;
             // Check if this equipment fits in this slot
             const slots = eq.getSlots ? eq.getSlots() : [eq.slot];
@@ -4414,6 +4415,9 @@ function autoEquip() {
 
         // Equip the best item if better than current
         if (bestEntry && bestEq && bestEq !== current) {
+            // Mark as used so it's not considered for other slots
+            bestEntry.used = true;
+
             // Unequip current if exists
             if (current) {
                 p.inventory.push({ type: 'equip', equip: current });
@@ -4430,7 +4434,7 @@ function autoEquip() {
 
             // Update indices (items may have shifted)
             for (const e of allEquips) {
-                if (e.source === bestEntry.source && e.idx > bestEntry.idx) {
+                if (!e.used && e.source === bestEntry.source && e.idx > bestEntry.idx) {
                     e.idx--;
                 }
             }
