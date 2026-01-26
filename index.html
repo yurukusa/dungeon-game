@@ -1077,7 +1077,18 @@ const PREFIXES = [
     // ========== ユーティリティ（Tiered） ==========
     {name:'探索の',weight:40,minFloor:10,power:1,tiered:'mf'},
     {name:'金運の',weight:50,minFloor:5,power:1,tiered:'gf'},
-    {name:'魂集めの',weight:30,minFloor:15,power:2,tiered:'sf'}
+    {name:'魂集めの',weight:30,minFloor:15,power:2,tiered:'sf'},
+    // ========== 条件付き（非Tiered）==========
+    {name:'危険な',stats:{physDmgInc:[20,50]},weight:25,minFloor:15,power:2,allowedTypes:WEAPON_TYPES}, // 低HP時ボーナス向け
+    {name:'狂戦士の',stats:{crit:[8,20],critDmg:[20,50]},weight:20,minFloor:20,power:3,allowedTypes:WEAPON_TYPES},
+    {name:'安定した',stats:{dmgMin:[5,15],dmgMax:[5,15]},weight:30,minFloor:10,power:2,allowedTypes:WEAPON_TYPES},
+    // ========== 属性変換（非Tiered）==========
+    {name:'炎化の',stats:{physToFire:[10,30]},weight:25,minFloor:15,tags:['fire'],power:2},
+    {name:'氷化の',stats:{physToCold:[10,30]},weight:25,minFloor:15,tags:['cold'],power:2},
+    {name:'雷化の',stats:{physToLightning:[10,30]},weight:25,minFloor:15,tags:['lightning'],power:2},
+    {name:'闇化の',stats:{physToDark:[10,30]},weight:20,minFloor:20,tags:['dark'],power:2},
+    // ========== 物理軽減（非Tiered）==========
+    {name:'鋼の',stats:{physReduction:[1,5]},weight:30,minFloor:10,power:2}
 ];
 const SUFFIXES = [
     // ========== 耐性系（Tiered） ==========
@@ -1103,7 +1114,16 @@ const SUFFIXES = [
     // ========== 高Tier複合 ==========
     {name:'全能',stats:{str:[8,20],dex:[8,20],int:[8,20]},weight:10,minFloor:40,power:3},
     {name:'不死',stats:{lifeLeech:[3,6],hpRegen:[5,15],hp:[20,50]},weight:8,minFloor:50,power:3},
-    {name:'覇者',stats:{crit:[8,15],critDmg:[30,80]},weight:10,minFloor:45,power:3}
+    {name:'覇者',stats:{crit:[8,15],critDmg:[30,80]},weight:10,minFloor:45,power:3},
+    // ========== 条件付き複合（非Tiered）==========
+    {name:'背水',stats:{physDmgInc:[30,60],lifeLeech:[2,5]},weight:15,minFloor:25,power:3,allowedTypes:WEAPON_TYPES}, // 低HP時向け
+    {name:'堅守',stats:{armor:[15,40],block:[5,15]},weight:20,minFloor:15,power:2,allowedTypes:['shield','body']},
+    {name:'不屈',stats:{fireRes:[10,25],coldRes:[10,25],ltnRes:[10,25]},weight:18,minFloor:20,power:3},
+    {name:'鉄壁',stats:{block:[14,25]},weight:20,minFloor:50,power:3,allowedTypes:['shield']},
+    // ========== 耐性上限突破（非Tiered）==========
+    {name:'限界突破',stats:{maxFireRes:[1,3],maxColdRes:[1,3],maxLtnRes:[1,3],maxDarkRes:[1,3]},weight:15,minFloor:30,power:3},
+    // ========== 余裕（非Tiered）==========
+    {name:'余裕',stats:{eva:[10,25],magicFind:[10,30]},weight:25,minFloor:12,power:2}
 ];
 
 // Dungeon tag bonus (multiplier for affix weight)
@@ -1838,7 +1858,7 @@ class Game {
         let ltnDmg = Math.floor((stats.ltnDmg || 0) * (100 + (stats.ltnDmgInc || 0)) / 100);
         let darkDmg = Math.floor((stats.darkDmg || 0) * (100 + (stats.darkDmgInc || 0)) / 100);
 
-        // Convert physical to elemental
+        // Convert physical to elemental (from unique effects)
         if (effects.physToFire) {
             const conv = Math.floor(dmg * effects.physToFire / 100);
             dmg -= conv;
@@ -1853,6 +1873,27 @@ class Game {
             const conv = Math.floor(dmg * effects.physToLightning / 100);
             dmg -= conv;
             ltnDmg += conv;
+        }
+        // Convert physical to elemental (from affix stats)
+        if (stats.physToFire > 0) {
+            const conv = Math.floor(dmg * stats.physToFire / 100);
+            dmg -= conv;
+            fireDmg += conv;
+        }
+        if (stats.physToCold > 0) {
+            const conv = Math.floor(dmg * stats.physToCold / 100);
+            dmg -= conv;
+            coldDmg += conv;
+        }
+        if (stats.physToLightning > 0) {
+            const conv = Math.floor(dmg * stats.physToLightning / 100);
+            dmg -= conv;
+            ltnDmg += conv;
+        }
+        if (stats.physToDark > 0) {
+            const conv = Math.floor(dmg * stats.physToDark / 100);
+            dmg -= conv;
+            darkDmg += conv;
         }
 
         // Apply armor to remaining physical damage
@@ -2158,6 +2199,10 @@ class Game {
                 }
 
                 let phys = Math.max(1, randInt(e.atkMin, e.atkMax) - Math.floor(armor/3));
+                // Apply physical damage reduction (flat reduction from affixes)
+                if (stats.physReduction > 0) {
+                    phys = Math.max(1, phys - stats.physReduction);
+                }
                 let elemFire = Math.floor((e.fireDmg||0)*(100-stats.fireRes)/100);
                 let elemCold = Math.floor((e.coldDmg||0)*(100-stats.coldRes)/100);
                 let elemLtn = Math.floor((e.ltnDmg||0)*(100-stats.ltnRes)/100);
@@ -2468,7 +2513,11 @@ class Player {
             fireRes: 0, coldRes: 0, ltnRes: 0, darkRes: 0, hpRegen: 0,
             accuracy: 80, lifeLeech: 0, lifeOnKill: 0,
             physDmgInc: 0, fireDmgInc: 0, coldDmgInc: 0, ltnDmgInc: 0, darkDmgInc: 0,
-            goldFind: 0, expBonus: 0, magicFind: 0
+            goldFind: 0, expBonus: 0, magicFind: 0,
+            // New stats for affixes
+            physReduction: 0, // Flat physical damage reduction
+            physToFire: 0, physToCold: 0, physToLightning: 0, physToDark: 0, // Element conversion
+            maxFireRes: 0, maxColdRes: 0, maxLtnRes: 0, maxDarkRes: 0 // Resistance cap increases
         };
 
         for (const slot of EQUIP_SLOTS) {
@@ -2533,10 +2582,11 @@ class Player {
             s.armor += goldBonus;
         }
 
-        s.fireRes = Math.min(75, s.fireRes);
-        s.coldRes = Math.min(75, s.coldRes);
-        s.ltnRes = Math.min(75, s.ltnRes);
-        s.darkRes = Math.min(75, s.darkRes);
+        // Apply resistance caps (base 75% + maxRes bonuses)
+        s.fireRes = Math.min(75 + s.maxFireRes, s.fireRes);
+        s.coldRes = Math.min(75 + s.maxColdRes, s.coldRes);
+        s.ltnRes = Math.min(75 + s.maxLtnRes, s.ltnRes);
+        s.darkRes = Math.min(75 + s.maxDarkRes, s.darkRes);
         s.eva = Math.min(75, s.eva);
         s.block = Math.min(75, s.block);
 
@@ -3711,8 +3761,10 @@ function formatStat(k) {
         fireDmg:'炎ダメージ',coldDmg:'氷ダメージ',ltnDmg:'雷ダメージ',darkDmg:'闇ダメージ',
         fireRes:'炎耐性',coldRes:'氷耐性',ltnRes:'雷耐性',darkRes:'闇耐性',hpRegen:'HP再生',
         accuracy:'命中',lifeLeech:'ライフリーチ',lifeOnKill:'キル時HP',
-        physDmgInc:'物理ダメ増',fireDmgInc:'炎ダメ増',coldDmgInc:'氷ダメ増',ltnDmgInc:'雷ダメ増',darkDmgInc:'闇ダメ増',
-        goldFind:'ゴールド発見',expBonus:'経験値ボーナス',magicFind:'アイテム発見'};
+        physDmgInc:'物理ダメ増',fireDmgInc:'炎ダメ増',coldDmgInc:'氷ダメ増',ltnDmgInc:'雷ダメ増',darkDmgInc:'闘ダメ増',
+        goldFind:'ゴールド発見',expBonus:'経験値ボーナス',magicFind:'アイテム発見',
+        physReduction:'物理軽減',physToFire:'物理→炎変換',physToCold:'物理→氷変換',physToLightning:'物理→雷変換',physToDark:'物理→闇変換',
+        maxFireRes:'炎耐性上限',maxColdRes:'氷耐性上限',maxLtnRes:'雷耐性上限',maxDarkRes:'闇耐性上限'};
     return names[k] || k;
 }
 
@@ -3740,7 +3792,18 @@ function formatEffect(k, v) {
         soulFind: `魂獲得 +${v}%`,
         bonusExp: `経験値 +${v}%`,
         hpRegenPercent: `フロア毎に最大HP${v}%回復`,
-        lifeLeech: `ライフリーチ ${v}%`
+        lifeLeech: `ライフリーチ ${v}%`,
+        physToDark: `物理ダメの${v}%を闇に変換`,
+        chainLightning: `キル時${v}体に連鎖雷撃`,
+        shockOnBlock: `ブロック時${v}の感電付与`,
+        attackSpeed: `追加攻撃`,
+        goldToArmor: `所持金で装甲ボーナス`,
+        darkReflect: `ブロック時${v}闇反射`,
+        onHitShock: `攻撃時に${v}の感電付与`,
+        rootOnCrit: `クリティカル時スタン`,
+        cheatDeath: `致命傷を1回生存`,
+        allDamagePercent: `全ダメージ +${v}%`,
+        critLightningBonus: `クリ時雷ダメ +${v}%`
     };
     return effects[k] || `${k}: ${v}`;
 }
