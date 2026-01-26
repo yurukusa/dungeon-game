@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Dungeon Game</title>
+    <title>DUNG: Azure Flame</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -234,6 +234,7 @@
         .c-unique { color: #e67e22; }
         .c-legend { color: #9b59b6; }
         .c-set { color: #2ecc71; }
+        .c-magenta { color: #c678dd; }
         .c-red { color: #e74c3c; }
         .c-green { color: #2ecc71; }
         .c-cyan { color: #00bcd4; }
@@ -242,27 +243,34 @@
         /* Title screen */
         #title-screen {
             text-align: center;
-            padding: 40px;
+            padding: 60px 20px;
         }
         #title-screen h1 {
-            font-size: 32px;
-            color: #f1c40f;
-            margin-bottom: 30px;
+            font-size: 64px;
+            color: #3498db;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(52, 152, 219, 0.5), 0 0 40px rgba(52, 152, 219, 0.3);
+            letter-spacing: 8px;
         }
         .title-btn {
             display: block;
-            width: 200px;
-            margin: 10px auto;
-            padding: 15px;
+            width: 220px;
+            margin: 15px auto;
+            padding: 18px;
             font-size: 18px;
-            background: #2d4a6a;
-            border: none;
+            background: linear-gradient(135deg, #2d4a6a, #1a3a5a);
+            border: 2px solid #3498db;
             border-radius: 8px;
             color: #fff;
             cursor: pointer;
+            transition: all 0.2s;
         }
-        .title-btn:hover { background: #4a6a8a; }
-        .title-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .title-btn:hover {
+            background: linear-gradient(135deg, #4a6a8a, #2d4a6a);
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.4);
+            transform: scale(1.02);
+        }
+        .title-btn:disabled { background: #222; color: #555; cursor: not-allowed; border-color: #444; }
         /* Equipment detail */
         .equip-detail {
             background: #2a2a4e;
@@ -418,8 +426,8 @@
     <div id="game-container">
         <!-- Title Screen -->
         <div id="title-screen">
-            <h1>DUNGEON GAME</h1>
-            <p style="color:#888;margin-bottom:20px;">~ Diablo-like Dungeon RPG ~</p>
+            <h1 class="c-flame">DUNG</h1>
+            <p style="color:#888;font-size:16px;margin-bottom:30px;">~ Forged in Azure Flame ~</p>
             <button class="title-btn" id="btn-continue" disabled>Continue</button>
             <button class="title-btn" id="btn-new">New Game</button>
         </div>
@@ -1360,7 +1368,7 @@ const SETS = {
         effects: ['magic_range','element_convergence','mana_barrier']
     }
 };
-const SET_MIN_FLOOR = 8;
+const SET_MIN_FLOOR = 20;  // Python版と同じ（8*2.5=20）
 
 // Dungeon Events
 const DUNGEON_EVENTS = {
@@ -5138,9 +5146,14 @@ function renderForgeActions() {
         actions.push({id:'cycle', name:'輪廻', desc:'数値再抽選', cost: baseCost});
     }
 
-    // Mod removal (Magic+)
+    // Extract: remove 1 mod (no ★ protection)
     if (['MAGIC', 'RARE', 'LEGEND'].includes(eq.rarity) && (eq.prefixes.length + eq.suffixes.length) > 0) {
-        actions.push({id:'regress', name:'回帰', desc:'mod削除', cost: Math.floor(baseCost * 0.5)});
+        actions.push({id:'extract', name:'抽出', desc:'1mod削除', cost: baseCost * 3});
+    }
+
+    // Regress: remove ALL mods (★ protected for Legend)
+    if (['MAGIC', 'RARE', 'LEGEND'].includes(eq.rarity) && (eq.prefixes.length + eq.suffixes.length) > 0) {
+        actions.push({id:'regress', name:'回帰', desc:'全mod削除', cost: baseCost * 6});
     }
 
     // Corrupt (all)
@@ -5249,28 +5262,65 @@ function forgeAction(action, cost) {
             }
             break;
 
-        case 'regress': // Remove mod
+        case 'extract': // Remove 1 mod (no ★ protection)
             if (!['MAGIC', 'RARE', 'LEGEND'].includes(eq.rarity)) { result = '<span class="c-red">対象外</span>'; break; }
-            const allAffixes = [...eq.prefixes, ...eq.suffixes];
-            if (allAffixes.length === 0) { result = '<span class="c-red">削除可能なmodがない</span>'; break; }
+            const extractAffixes = [...eq.prefixes, ...eq.suffixes];
+            if (extractAffixes.length === 0) { result = '<span class="c-red">削除可能なmodがない</span>'; break; }
+            // Random 1 mod removal
             if (Math.random() < 0.5 && eq.prefixes.length > 0) {
                 const removed = eq.prefixes.splice(randInt(0, eq.prefixes.length - 1), 1)[0];
-                result = `<span class="c-gray">回帰成功！</span><br><span class="c-red">-${removed.name}</span>`;
+                result = `<span class="c-magenta">抽出成功！</span><br><span class="c-red">-${removed.name}</span>`;
             } else if (eq.suffixes.length > 0) {
                 const removed = eq.suffixes.splice(randInt(0, eq.suffixes.length - 1), 1)[0];
-                result = `<span class="c-gray">回帰成功！</span><br><span class="c-red">-${removed.name}</span>`;
+                result = `<span class="c-magenta">抽出成功！</span><br><span class="c-red">-${removed.name}</span>`;
             } else if (eq.prefixes.length > 0) {
                 const removed = eq.prefixes.splice(randInt(0, eq.prefixes.length - 1), 1)[0];
-                result = `<span class="c-gray">回帰成功！</span><br><span class="c-red">-${removed.name}</span>`;
+                result = `<span class="c-magenta">抽出成功！</span><br><span class="c-red">-${removed.name}</span>`;
+            }
+            // Rarity downgrade
+            const extractTotal = eq.prefixes.length + eq.suffixes.length;
+            if (eq.rarity === 'RARE' && extractTotal <= 2) {
+                eq.rarity = 'MAGIC';
+                result += '<br><span class="c-blue">→ マジックに降格</span>';
+            } else if (eq.rarity === 'MAGIC' && extractTotal === 0) {
+                eq.rarity = 'NORMAL';
+                result += '<br><span class="c-gray">→ ノーマルに降格</span>';
+            }
+            eq.name = eq.getFullName();
+            break;
+
+        case 'regress': // Remove ALL mods (★ protected for Legend)
+            if (!['MAGIC', 'RARE', 'LEGEND'].includes(eq.rarity)) { result = '<span class="c-red">対象外</span>'; break; }
+            if (eq.prefixes.length + eq.suffixes.length === 0) { result = '<span class="c-red">削除可能なmodがない</span>'; break; }
+            result = `<span class="c-gray">回帰成功！</span><br>`;
+            // For Legend: protect ★ marked affixes
+            if (eq.rarity === 'LEGEND') {
+                const removedPre = eq.prefixes.filter(p => !p.isPowerful);
+                const keptPre = eq.prefixes.filter(p => p.isPowerful);
+                const removedSuf = eq.suffixes.filter(s => !s.isPowerful);
+                const keptSuf = eq.suffixes.filter(s => s.isPowerful);
+                for (const r of removedPre) result += `<span class="c-red">-${r.name}</span><br>`;
+                for (const r of removedSuf) result += `<span class="c-red">-${r.name}</span><br>`;
+                for (const k of keptPre) result += `<span class="c-yellow">★${k.name}保護</span><br>`;
+                for (const k of keptSuf) result += `<span class="c-yellow">★${k.name}保護</span><br>`;
+                eq.prefixes = keptPre;
+                eq.suffixes = keptSuf;
+            } else {
+                // Remove all
+                for (const p of eq.prefixes) result += `<span class="c-red">-${p.name}</span><br>`;
+                for (const s of eq.suffixes) result += `<span class="c-red">-${s.name}</span><br>`;
+                eq.prefixes = [];
+                eq.suffixes = [];
             }
             // Rarity downgrade
             const total = eq.prefixes.length + eq.suffixes.length;
             if (eq.rarity === 'RARE' && total <= 2) {
                 eq.rarity = 'MAGIC';
-                result += '<br><span class="c-blue">→ マジックに降格</span>';
-            } else if (eq.rarity === 'MAGIC' && total === 0) {
+                result += '<span class="c-blue">→ マジックに降格</span>';
+            }
+            if ((eq.rarity === 'MAGIC' || eq.rarity === 'RARE') && total === 0) {
                 eq.rarity = 'NORMAL';
-                result += '<br><span class="c-gray">→ ノーマルに降格</span>';
+                result += '<span class="c-gray">→ ノーマルに降格</span>';
             }
             eq.name = eq.getFullName();
             break;
