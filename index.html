@@ -1125,22 +1125,32 @@ const UNIQUE_EFFECTS = {
     FIRE_PEN: 'firePen',                        // Ignore enemy fire resist
     COLD_PEN: 'coldPen',                        // Ignore enemy cold resist
     LIGHTNING_PEN: 'lightningPen',              // Ignore enemy lightning resist
+    CHAIN_LIGHTNING: 'chainLightning',          // Hit additional enemies
+    SHOCK_ON_BLOCK: 'shockOnBlock',             // Apply shock when blocking
+    ATTACK_SPEED: 'attackSpeed',                // Extra attacks per turn
     // Defense
     BLOCK_HEAL: 'blockHeal',                    // Heal on block
     REFLECT: 'reflect',                         // Reflect % damage taken
     CANNOT_BE_CRIT: 'cannotBeCrit',             // Immune to crits
     LOW_LIFE_DEFENSE: 'lowLifeDefense',         // +armor when HP < 35%
     DAMAGE_TO_SOUL: 'damageToSoul',             // Convert damage to soul cost
+    GOLD_TO_ARMOR: 'goldToArmor',               // Convert gold to armor bonus
+    DARK_REFLECT: 'darkReflect',                // Reflect dark damage on block
     // Trigger
     ON_KILL_RAGE: 'onKillRage',                 // +dmg% buff on kill (3 turns)
     ON_KILL_HASTE: 'onKillHaste',               // +accuracy buff on kill (3 turns)
     ON_KILL_SOUL: 'onKillSoul',                 // Extra soul on kill
     ON_HIT_BURN: 'onHitBurn',                   // Apply burn (fire DoT)
     ON_HIT_FREEZE: 'onHitFreeze',               // % chance to skip enemy turn
+    ON_HIT_SHOCK: 'onHitShock',                 // Apply shock (lightning DoT)
+    ROOT_ON_CRIT: 'rootOnCrit',                 // Stun enemy on crit
+    CHEAT_DEATH: 'cheatDeath',                  // Survive lethal damage once
     // Utility
     SOUL_FIND: 'soulFind',                      // +% soul gain
     BONUS_EXP: 'bonusExp',                      // +% exp (already in stats)
-    HP_REGEN_PERCENT: 'hpRegenPercent'          // % maxHP regen per floor
+    HP_REGEN_PERCENT: 'hpRegenPercent',         // % maxHP regen per floor
+    ALL_DAMAGE_PERCENT: 'allDamagePercent',     // +% all damage
+    CRIT_LIGHTNING_BONUS: 'critLightningBonus'  // Extra lightning damage on crit
 };
 
 const UNIQUES = [
@@ -1243,7 +1253,41 @@ const UNIQUES = [
     {name:'吹雪のアミュレット',type:'amulet',tier:2,stats:{coldDmg:18,coldRes:30,int:6},neg:{fireRes:-20},desc:'首にかけると風が吹く。',
      effects:{onHitFreeze:10,soulFind:15},dropCondition:'frozen'},
     {name:'氷壁の盾',type:'shield',tier:2,stats:{armor:25,block:22,coldRes:40},neg:{},reqStr:10,desc:'どんな炎も消える。',
-     effects:{blockHeal:12},dropCondition:'frozen'}
+     effects:{blockHeal:12},dropCondition:'frozen'},
+    // ========== 雷テーマ（灼熱/凍てつくドロップ） ==========
+    {name:'雷帝の大剣',type:'greatsword',tier:0,stats:{dmgMin:30,dmgMax:55,ltnDmg:60},neg:{coldRes:-40},reqStr:24,desc:'空が裂けた。……いつの話だったか。',
+     effects:{chainLightning:2,physToLightning:40},dropCondition:'inferno'},
+    {name:'雷神の心臓',type:'body',tier:0,stats:{armor:55,hp:35,ltnRes:60,ltnDmg:25},neg:{fireRes:-30},reqStr:18,desc:'脈動している。……雷鳴のように。',
+     effects:{attackSpeed:1,onHitShock:15},dropCondition:'inferno'},
+    {name:'轟雷の剣',type:'sword',tier:1,stats:{dmgMin:14,dmgMax:26,ltnDmg:30,crit:12},neg:{},reqStr:14,desc:'抜くと鳴る。……何の音だろう。',
+     effects:{critLightningBonus:50,lightningPen:15},dropCondition:'inferno'},
+    {name:'雷鳴の盾',type:'shield',tier:1,stats:{armor:28,block:20,ltnRes:45},neg:{coldRes:-25},reqStr:14,desc:'守ると轟く。',
+     effects:{shockOnBlock:true,reflect:8},dropCondition:'inferno'},
+    {name:'雷光の手袋',type:'gloves',tier:2,stats:{dex:10,ltnDmg:15,accuracy:12},neg:{},reqDex:10,desc:'触れる前に、届く。',
+     effects:{attackSpeed:1,lightningPen:10},dropCondition:'inferno'},
+    {name:'雷のベルト',type:'belt',tier:2,stats:{str:8,ltnDmg:12,ltnRes:20},neg:{},desc:'腰が痺れる。……慣れた。',
+     effects:{physToLightning:25},dropCondition:'inferno'},
+    // ========== その他の特殊ユニーク ==========
+    {name:'一度の奇跡',type:'amulet',tier:0,stats:{hp:30,fireRes:20,coldRes:20,ltnRes:20,darkRes:20},neg:{dmgMin:-5,dmgMax:-10},desc:'最後に一度だけ、奇跡は起きる。',
+     effects:{cheatDeath:true}},
+    {name:'因果の指輪',type:'ring',tier:0,stats:{dmgMin:15,dmgMax:30,darkDmg:20},neg:{hp:-30},desc:'与えた分だけ、返ってくる。',
+     effects:{allDamagePercent:50,reflect:10}},
+    {name:'混沌の剣',type:'sword',tier:0,stats:{dmgMin:12,dmgMax:35,fireDmg:10,coldDmg:10,ltnDmg:10,darkDmg:10},neg:{accuracy:-15},reqStr:16,desc:'何が起きるかは、誰にも分からない。',
+     effects:{onHitBurn:5,onHitFreeze:10,onHitShock:5}},
+    {name:'重い財布',type:'belt',tier:1,stats:{goldFind:50,armor:15},neg:{eva:-10},desc:'重いほど、安心する。',
+     effects:{goldToArmor:true}},
+    {name:'凍てつくベルト',type:'belt',tier:1,stats:{coldDmg:15,coldRes:35,int:6},neg:{fireRes:-25},desc:'腰から凍える。……足は動く。',
+     effects:{physToCold:20},dropCondition:'frozen'},
+    {name:'凍傷の手袋',type:'gloves',tier:1,stats:{int:12,coldDmg:18,coldRes:20},neg:{fireRes:-20},reqInt:10,desc:'指が青い。……感覚はある。',
+     effects:{onHitFreeze:15,coldPen:12},dropCondition:'frozen'},
+    {name:'奈落歩き',type:'boots',tier:1,stats:{eva:18,darkDmg:15,darkRes:30},neg:{hp:-20},desc:'足跡が消える。……どこへ行ったのか。',
+     effects:{allDamagePercent:20},dropCondition:'abyss'},
+    {name:'影縫いの手袋',type:'gloves',tier:1,stats:{dex:14,crit:15,darkDmg:12},neg:{armor:-10},reqDex:12,desc:'縫い止める。……動かない。',
+     effects:{rootOnCrit:true},dropCondition:'abyss'},
+    {name:'深淵の首飾り',type:'amulet',tier:0,stats:{darkDmg:30,darkRes:40,crit:10},neg:{hp:-35},desc:'覗いた。……覗き返された。',
+     effects:{allDamagePercent:35,cull:8},dropCondition:'abyss'},
+    {name:'虚ろの盾',type:'shield',tier:1,stats:{armor:30,block:22,darkRes:35},neg:{fireRes:-20},reqStr:12,desc:'何も映らない。',
+     effects:{darkReflect:15,blockHeal:8},dropCondition:'abyss'}
 ];
 const UNIQUE_TIER_FLOORS = {0:1,1:1,2:5,3:10,4:20,5:1,6:1};
 
@@ -1829,7 +1873,19 @@ class Game {
             elem = elem * 2;
         }
 
+        // Crit lightning bonus (extra lightning damage on crit)
+        if (crit && effects.critLightningBonus) {
+            const bonusLtn = Math.floor(ltnDmg * effects.critLightningBonus / 100);
+            elem += bonusLtn;
+            this.msg(`雷撃強化! +${bonusLtn}`, 'c-rare');
+        }
+
         let total = dmg + elem;
+
+        // All damage percent bonus
+        if (effects.allDamagePercent) {
+            total = Math.floor(total * (100 + effects.allDamagePercent) / 100);
+        }
 
         // Apply damage
         enemy.hp -= total;
@@ -1849,6 +1905,16 @@ class Game {
         if (effects.onHitFreeze && randInt(1, 100) <= effects.onHitFreeze && enemy.hp > 0) {
             enemy.frozen = true;
             this.msg(`${enemy.name}が凍結!`, 'c-cyan');
+        }
+        // On-hit shock (lightning DoT)
+        if (effects.onHitShock && enemy.hp > 0) {
+            enemy.shock = (enemy.shock || 0) + effects.onHitShock;
+            this.msg(`${enemy.name}が感電!`, 'c-rare');
+        }
+        // Root on crit (stun enemy)
+        if (crit && effects.rootOnCrit && enemy.hp > 0) {
+            enemy.stunned = true;
+            this.msg(`影縫い! ${enemy.name}行動不能!`, 'c-legend');
         }
 
         // Life leech (use effect override if present)
@@ -1881,6 +1947,13 @@ class Game {
             return; // Don't process kill twice
         }
 
+        // Equipment effect: attackSpeed (extra attacks per turn)
+        if (!isDoubleStrike && effects.attackSpeed && effects.attackSpeed > 0 && enemy.hp > 0) {
+            this.msg(`高速連撃!`, 'c-rare');
+            this.combat(enemy, true);
+            return; // Don't process kill twice
+        }
+
         if (enemy.hp <= 0) {
             const expBonus = stats.expBonus || 0;
             const exp = Math.floor(enemy.exp * (1 + expBonus / 100));
@@ -1899,6 +1972,23 @@ class Game {
 
             this.msg(`+${exp}EXP +${soulGain}魂`, 'c-green');
             this.dungeon.enemies = this.dungeon.enemies.filter(e => e !== enemy);
+
+            // Chain lightning (hit nearby enemies)
+            if (effects.chainLightning && effects.chainLightning > 0) {
+                let chainCount = 0;
+                for (const e of this.dungeon.enemies) {
+                    if (chainCount >= effects.chainLightning) break;
+                    const dist = Math.abs(e.x - enemy.x) + Math.abs(e.y - enemy.y);
+                    if (dist <= 2) {
+                        const chainDmg = Math.floor(ltnDmg * 0.5);
+                        e.hp -= chainDmg;
+                        this.msg(`連鎖雷撃! ${e.name}に${chainDmg}dmg`, 'c-rare');
+                        chainCount++;
+                    }
+                }
+                // Remove any chained enemies that died
+                this.dungeon.enemies = this.dungeon.enemies.filter(e => e.hp > 0);
+            }
 
             // Equipment drop
             if (enemy.isBoss) {
@@ -1988,7 +2078,16 @@ class Game {
                 if (e.burn < 1) e.burn = 0;
             }
         }
-        // Remove dead enemies from burn
+        // Process shock damage on all enemies (lightning DoT)
+        for (const e of this.dungeon.enemies) {
+            if (e.shock > 0) {
+                e.hp -= e.shock;
+                this.msg(`${e.name}が${e.shock}感電ダメ!`, 'c-rare');
+                e.shock = Math.floor(e.shock * 0.6); // Shock decays faster
+                if (e.shock < 1) e.shock = 0;
+            }
+        }
+        // Remove dead enemies from burn/shock
         this.dungeon.enemies = this.dungeon.enemies.filter(e => e.hp > 0);
 
         // Calculate armor with low HP bonus
@@ -2039,6 +2138,21 @@ class Game {
                     if (effects.blockHeal) {
                         this.player.hp = Math.min(stats.maxHp, this.player.hp + effects.blockHeal);
                         this.msg(`ブロック回復 +${effects.blockHeal}HP`, 'c-green');
+                    }
+                    // shockOnBlock: Apply shock to attacker when blocking
+                    if (effects.shockOnBlock) {
+                        e.shock = (e.shock || 0) + effects.shockOnBlock;
+                        this.msg(`感電反撃! ${e.name}に感電付与!`, 'c-rare');
+                    }
+                    // darkReflect: Reflect dark damage on block
+                    if (effects.darkReflect) {
+                        const darkReflectDmg = effects.darkReflect;
+                        e.hp -= darkReflectDmg;
+                        this.msg(`闇の反射! ${e.name}に${darkReflectDmg}dmg!`, 'c-legend');
+                        if (e.hp <= 0) {
+                            this.player.souls += e.soul;
+                            this.msg(`${e.name}撃破! +${e.soul}魂`, 'c-green');
+                        }
                     }
                     continue;
                 }
@@ -2096,6 +2210,14 @@ class Game {
                     this.player.lastStandUsed = true;
                     this.player.hp = stats.maxHp;
                     this.msg(`★ 最後の砦発動！HP全回復！ ★`, 'c-legend');
+                    continue;
+                }
+
+                // Equipment effect: cheatDeath (survive fatal damage once per floor)
+                if (this.player.hp <= 0 && effects.cheatDeath && !this.player.cheatDeathUsed) {
+                    this.player.cheatDeathUsed = true;
+                    this.player.hp = 1;
+                    this.msg(`★ 一度の奇跡発動！HP1で生存！ ★`, 'c-legend');
                     continue;
                 }
 
@@ -2309,6 +2431,7 @@ class Player {
         this.buffs = []; // Temporary buffs from unique effects
         // Set effect states
         this.lastStandUsed = false; // Reset per floor
+        this.cheatDeathUsed = false; // Reset per floor (equipment effect)
         this.manaShield = 0; // Current mana shield value
         this.floorBuffs = {}; // Temporary floor buffs from events {stat: value}
     }
@@ -2402,6 +2525,14 @@ class Player {
             s.block -= blockPen;
         }
 
+        // Equipment effect: goldToArmor (convert gold to armor bonus)
+        const effects = this.getEquippedEffects();
+        if (effects.goldToArmor) {
+            // Every 100 gold = +1 armor (max 50 armor bonus)
+            const goldBonus = Math.min(50, Math.floor(this.gold / 100));
+            s.armor += goldBonus;
+        }
+
         s.fireRes = Math.min(75, s.fireRes);
         s.coldRes = Math.min(75, s.coldRes);
         s.ltnRes = Math.min(75, s.ltnRes);
@@ -2477,6 +2608,7 @@ class Player {
     // Reset per-floor set effect states
     resetFloorSetEffects() {
         this.lastStandUsed = false;
+        this.cheatDeathUsed = false;
         this.clearFloorBuffs();
     }
 
@@ -2548,6 +2680,7 @@ class Player {
             }),
             buffs: this.buffs,
             lastStandUsed: this.lastStandUsed,
+            cheatDeathUsed: this.cheatDeathUsed,
             manaShield: this.manaShield
         };
     }
@@ -2558,7 +2691,7 @@ class Player {
             statPoints:d.statPoints||0,
             baseStr:d.baseStr,baseDex:d.baseDex,baseInt:d.baseInt,baseHp:d.baseHp,hp:d.hp,
             gold:d.gold,souls:d.souls||0,returnFlames:d.returnFlames||0,
-            lastStandUsed:d.lastStandUsed||false,manaShield:d.manaShield||0});
+            lastStandUsed:d.lastStandUsed||false,cheatDeathUsed:d.cheatDeathUsed||false,manaShield:d.manaShield||0});
         for (const slot of EQUIP_SLOTS) {
             try {
                 p.equipment[slot] = d.equipment[slot] ? Equipment.fromJSON(d.equipment[slot]) : null;
