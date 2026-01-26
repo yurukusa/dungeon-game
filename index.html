@@ -434,21 +434,21 @@
             </div>
             <div class="npc-dialogue" id="npc-dialogue"></div>
             <div class="town-menu">
-                <button class="town-btn" id="btn-bonfire">焚き火</button>
-                <button class="town-btn" id="btn-dungeon">ダンジョンへ</button>
-                <button class="town-btn" id="btn-offer-souls">魂を捧げる</button>
-                <button class="town-btn" id="btn-stash" disabled>保管箱</button>
-                <button class="town-btn" id="btn-shop" disabled>商人</button>
-                <button class="town-btn" id="btn-forge" disabled>鍛冶</button>
-                <button class="town-btn" id="btn-altar" disabled>祭壇</button>
-                <button class="town-btn" id="btn-auto" disabled>自動探索</button>
-                <button class="town-btn" id="btn-auto-equip" disabled>自動装備</button>
-                <button class="town-btn" id="btn-soul-return" disabled>ソウル帰還</button>
-                <button class="town-btn" id="btn-recover" disabled>装備回収</button>
-                <button class="town-btn" id="btn-town-inv">持ち物</button>
-                <button class="town-btn" id="btn-stat-alloc">ステ振り</button>
-                <button class="town-btn" id="btn-town-status">ステータス</button>
-                <button class="town-btn" id="btn-town-save">セーブ</button>
+                <button class="town-btn" id="btn-bonfire" title="死亡時の装備回収">焚き火</button>
+                <button class="town-btn" id="btn-dungeon" title="ダンジョンを選択して探索開始">ダンジョンへ</button>
+                <button class="town-btn" id="btn-offer-souls" title="魂を捧げて町を発展させる">魂を捧げる</button>
+                <button class="town-btn" id="btn-stash" disabled title="装備を100個まで保管（Lv2で解放）">保管箱</button>
+                <button class="town-btn" id="btn-shop" disabled title="装備やポーションを売買（Lv3で解放）">商人</button>
+                <button class="town-btn" id="btn-forge" disabled title="装備の強化・改造（Lv4で解放）">鍛冶</button>
+                <button class="town-btn" id="btn-altar" disabled title="特殊な儀式（Lv5で解放）">祭壇</button>
+                <button class="town-btn" id="btn-auto" disabled title="自動でダンジョン探索（Lv3で解放）">自動探索</button>
+                <button class="town-btn" id="btn-auto-equip" disabled title="最強装備を自動装着（Lv2で解放）">自動装備</button>
+                <button class="town-btn" id="btn-soul-return" disabled title="ダンジョン内で使用可能。全魂消費で緊急帰還（Lv4 & 1万魂）">ソウル帰還</button>
+                <button class="town-btn" id="btn-recover" disabled title="死亡時に失った装備を魂で回収">装備回収</button>
+                <button class="town-btn" id="btn-town-inv" title="持ち物を確認・整理">持ち物</button>
+                <button class="town-btn" id="btn-stat-alloc" title="レベルアップで得たポイントを割り振り">ステ振り</button>
+                <button class="town-btn" id="btn-town-status" title="プレイヤーの詳細ステータス">ステータス</button>
+                <button class="town-btn" id="btn-town-save" title="ゲームをセーブ">セーブ</button>
             </div>
         </div>
 
@@ -477,13 +477,13 @@
                     <button class="ctrl-btn" data-dir="right">D</button>
                 </div>
                 <div class="action-btns">
-                    <button class="action-btn" id="btn-inventory">Bag</button>
-                    <button class="action-btn" id="btn-status">Status</button>
-                    <button class="action-btn" id="btn-stairs">Stairs</button>
-                    <button class="action-btn flame" id="btn-return-town">帰還 <span class="return-items" id="return-count"></span></button>
-                    <button class="action-btn c-legend" id="btn-soul-escape" disabled>魂帰還</button>
-                    <button class="action-btn" id="btn-save">Save</button>
-                    <button class="action-btn" id="btn-settings">設定</button>
+                    <button class="action-btn" id="btn-inventory" title="持ち物確認 (Iキー)">Bag</button>
+                    <button class="action-btn" id="btn-status" title="ステータス確認 (Cキー)">Status</button>
+                    <button class="action-btn" id="btn-stairs" title="階段を降りる (Enterキー)">Stairs</button>
+                    <button class="action-btn flame" id="btn-return-town" title="開始地点・炎の揺らぎ・帰還の灯火で帰還">帰還 <span class="return-items" id="return-count"></span></button>
+                    <button class="action-btn c-legend" id="btn-soul-escape" disabled title="全魂消費で即座に帰還">魂帰還</button>
+                    <button class="action-btn" id="btn-save" title="ゲームをセーブ">Save</button>
+                    <button class="action-btn" id="btn-settings" title="設定画面を開く">設定</button>
                 </div>
             </div>
             <div id="side-panel">
