@@ -1667,6 +1667,7 @@ class Game {
         this.player.x = this.dungeon.startX;
         this.player.y = this.dungeon.startY;
         this.player.hp = this.player.getStats().maxHp;
+        this.player.cheatDeathUsed = false; // Reset cheatDeath on dungeon enter
         this.player.resetFloorSetEffects();
         this.msg(`『${this.getDungeonInfo().name}』に足を踏み入れた`);
         this.save();
@@ -1679,6 +1680,7 @@ class Game {
         this.resetPlayerLevel();
 
         this.player.hp = this.player.getStats().maxHp;
+        this.player.cheatDeathUsed = false; // Reset cheatDeath on town return
         this.msg('町に戻った。レベル1に戻り、HP全回復。', 'c-flame');
 
         // 自動倉庫保管: 設定レアリティ以上の装備を倉庫へ
@@ -2531,23 +2533,35 @@ class Player {
             }
         }
 
-        // Set bonuses
+        // Set bonuses (with floor scaling)
         const setCounts = {};
+        const setFloors = {}; // Track effective floors per set
         for (const slot of EQUIP_SLOTS) {
             const eq = this.equipment[slot];
             if (eq && eq.setName) {
                 setCounts[eq.setName] = (setCounts[eq.setName] || 0) + 1;
+                if (!setFloors[eq.setName]) setFloors[eq.setName] = [];
+                setFloors[eq.setName].push(eq.effectiveFloor || 1);
             }
         }
         for (const setName in setCounts) {
             const set = SETS[setName];
             if (set) {
+                // Calculate average effective floor for scaling
+                const avgFloor = setFloors[setName].reduce((a, b) => a + b, 0) / setFloors[setName].length;
+                const floorScale = 1 + avgFloor * 0.08;
+
                 for (const reqCount in set.bonuses) {
                     if (setCounts[setName] >= parseInt(reqCount)) {
                         const bonus = set.bonuses[reqCount];
                         for (const k in bonus) {
                             const mapped = statKeyMap(k);
-                            if (mapped in s) s[mapped] += bonus[k];
+                            if (mapped in s) {
+                                // %系はスケーリングなし、フラット値はスケーリング
+                                const isNoScale = NO_SCALE_STATS.has(mapped);
+                                const scaledValue = isNoScale ? bonus[k] : Math.floor(bonus[k] * floorScale);
+                                s[mapped] += scaledValue;
+                            }
                         }
                     }
                 }
@@ -2655,10 +2669,10 @@ class Player {
         return this.getSetEffects().includes(effectName);
     }
 
-    // Reset per-floor set effect states
+    // Reset per-floor set effect states (called on floor change)
     resetFloorSetEffects() {
         this.lastStandUsed = false;
-        this.cheatDeathUsed = false;
+        // NOTE: cheatDeathUsed is NOT reset per floor - only on town return/dungeon enter
         this.clearFloorBuffs();
     }
 
@@ -3113,14 +3127,31 @@ function calcAffixWeight(affix, floor, dungeonId = 0, equipType = null) {
     return weight;
 }
 
-function rollAffixStat(value, floor) {
-    // If value is an array [min, max], roll a random value and scale with floor
+// %系ステータス（スケーリング対象外）
+const NO_SCALE_STATS = new Set([
+    'crit', 'critDmg', 'accuracy', 'eva', 'block',
+    'fireRes', 'coldRes', 'ltnRes', 'darkRes',
+    'physDmgInc', 'fireDmgInc', 'coldDmgInc', 'ltnDmgInc', 'darkDmgInc',
+    'lifeLeech', 'attackSpeed', 'magicFind', 'goldFind', 'soulFind',
+    'physToFire', 'physToCold', 'physToLightning', 'physToDark'
+]);
+
+function rollAffixStat(value, floor, statKey = '') {
+    // If value is an array [min, max], roll a random value
     if (Array.isArray(value)) {
-        const scale = 1 + floor * 0.03;  // 調整: スケール緩和
         const min = value[0], max = value[1];
+        // %系ステータスはスケーリングなし
+        if (NO_SCALE_STATS.has(statKey)) {
+            return Math.floor(min + Math.random() * (max - min + 1));
+        }
+        // フラット値はフロアでスケーリング
+        const scale = 1 + floor * 0.03;
         return Math.floor((min + Math.random() * (max - min)) * scale * (0.85 + Math.random() * 0.3));
     }
-    // Old format: fixed value with scaling
+    // Old format: fixed value
+    if (NO_SCALE_STATS.has(statKey)) {
+        return value;
+    }
     return Math.floor(value * (1 + floor * 0.05) * (0.85 + Math.random() * 0.3));
 }
 
@@ -3131,7 +3162,7 @@ function buildTieredAffixStats(affix, floor, isPrefix = true) {
         // 非Tiered: 従来通り
         const stats = {};
         for (const k in affix.stats) {
-            stats[k] = rollAffixStat(affix.stats[k], floor);
+            stats[k] = rollAffixStat(affix.stats[k], floor, k);
         }
         return {name: affix.name, stats};
     }
@@ -3143,7 +3174,7 @@ function buildTieredAffixStats(affix, floor, isPrefix = true) {
         // Fallback
         const stats = {};
         for (const k in (affix.stats || {})) {
-            stats[k] = rollAffixStat(affix.stats[k], floor);
+            stats[k] = rollAffixStat(affix.stats[k], floor, k);
         }
         return {name: affix.name, stats};
     }
@@ -3156,7 +3187,7 @@ function buildTieredAffixStats(affix, floor, isPrefix = true) {
     const stats = {};
     for (const k in tierInfo) {
         if (k === 'name') continue;
-        stats[k] = rollAffixStat(tierInfo[k], floor);
+        stats[k] = rollAffixStat(tierInfo[k], floor, k);
     }
     return {name: tierInfo.name, stats, tier};
 }
