@@ -442,6 +442,8 @@
                 <button class="town-btn" id="btn-forge" disabled>鍛冶</button>
                 <button class="town-btn" id="btn-altar" disabled>祭壇</button>
                 <button class="town-btn" id="btn-auto" disabled>自動探索</button>
+                <button class="town-btn" id="btn-auto-equip" disabled>自動装備</button>
+                <button class="town-btn" id="btn-soul-return" disabled>ソウル帰還</button>
                 <button class="town-btn" id="btn-recover" disabled>装備回収</button>
                 <button class="town-btn" id="btn-town-inv">持ち物</button>
                 <button class="town-btn" id="btn-stat-alloc">ステ振り</button>
@@ -479,6 +481,7 @@
                     <button class="action-btn" id="btn-status">Status</button>
                     <button class="action-btn" id="btn-stairs">Stairs</button>
                     <button class="action-btn flame" id="btn-return-town">帰還 <span class="return-items" id="return-count"></span></button>
+                    <button class="action-btn c-legend" id="btn-soul-escape" disabled>魂帰還</button>
                     <button class="action-btn" id="btn-save">Save</button>
                     <button class="action-btn" id="btn-settings">設定</button>
                 </div>
@@ -758,14 +761,18 @@ const DUNGEONS = {
     3: { name: '虚無の回廊', maxFloor: 1, desc: '終焉の地', bossFloor: true }
 };
 
+// Dungeon penalties (harder dungeons lower your resistances)
+const RESIST_PENALTY = { 0: 0, 1: 60, 2: 170, 3: 170 };
+const BLOCK_PENALTY = { 0: 0, 1: 30, 2: 85, 3: 85 };
+
 // Town levels
 const TOWN_LEVELS = {
     0: { name: '焚き火', soulReq: 0, features: [] },
     1: { name: '小さな灯り', soulReq: 50, features: ['soulConvert'] },
-    2: { name: '朽ちた祠', soulReq: 150, features: ['soulConvert', 'stash'] },
-    3: { name: '忘れられた広場', soulReq: 400, features: ['soulConvert', 'stash', 'shop', 'autoExplore'] },
-    4: { name: '霧の集落', soulReq: 800, features: ['soulConvert', 'stash', 'shop', 'autoExplore', 'forge'] },
-    5: { name: '目覚めし町', soulReq: 1500, features: ['soulConvert', 'stash', 'shop', 'autoExplore', 'forge', 'altar'] }
+    2: { name: '朽ちた祠', soulReq: 150, features: ['soulConvert', 'stash', 'autoEquip'] },
+    3: { name: '忘れられた広場', soulReq: 400, features: ['soulConvert', 'stash', 'autoEquip', 'shop', 'autoExplore'] },
+    4: { name: '霧の集落', soulReq: 800, features: ['soulConvert', 'stash', 'autoEquip', 'shop', 'autoExplore', 'forge', 'soulReturn'] },
+    5: { name: '目覚めし町', soulReq: 1500, features: ['soulConvert', 'stash', 'autoEquip', 'shop', 'autoExplore', 'forge', 'soulReturn', 'altar'] }
 };
 
 // NPC Dialogue
@@ -2380,6 +2387,21 @@ class Player {
             if (k in s) s[k] += this.floorBuffs[k];
         }
 
+        // Apply dungeon penalties (harder dungeons reduce resistances)
+        if (game && !game.inTown && game.dungeonId !== undefined) {
+            const resistPen = RESIST_PENALTY[game.dungeonId] || 0;
+            const blockPen = BLOCK_PENALTY[game.dungeonId] || 0;
+            // Deep mode adds extra penalty
+            const deepBonus = game.isDeepMode && game.isDeepMode() ? 50 : 0;
+            const totalResistPen = resistPen + deepBonus;
+
+            s.fireRes -= totalResistPen;
+            s.coldRes -= totalResistPen;
+            s.ltnRes -= totalResistPen;
+            s.darkRes -= totalResistPen;
+            s.block -= blockPen;
+        }
+
         s.fireRes = Math.min(75, s.fireRes);
         s.coldRes = Math.min(75, s.coldRes);
         s.ltnRes = Math.min(75, s.ltnRes);
@@ -3359,6 +3381,13 @@ function render() {
     const canReturn = (game.player.x === game.dungeon.startX && game.player.y === game.dungeon.startY) || atFlame || returnCount > 0;
     document.getElementById('btn-return-town').disabled = !canReturn;
 
+    // Soul escape (emergency return - requires 10,000+ souls and town level 4)
+    const canSoulEscape = game.town.hasFeature('soulReturn') && game.player.souls >= 10000;
+    document.getElementById('btn-soul-escape').disabled = !canSoulEscape;
+    document.getElementById('btn-soul-escape').title = canSoulEscape
+        ? `全魂(${game.player.souls})消費で即帰還`
+        : '10,000魂以上必要（町Lv4で解放）';
+
     // Map
     let mapHtml = '';
     for (let y = 0; y < MAP_HEIGHT; y++) {
@@ -3444,6 +3473,10 @@ function renderTown() {
     document.getElementById('btn-forge').disabled = !town.hasFeature('forge');
     document.getElementById('btn-altar').disabled = !town.hasFeature('altar');
     document.getElementById('btn-auto').disabled = !town.hasFeature('autoExplore');
+    document.getElementById('btn-auto-equip').disabled = !town.hasFeature('autoEquip');
+    // Soul return requires 10,000+ souls and town level 4
+    const canSoulReturn = town.hasFeature('soulReturn') && game.player.souls >= 10000;
+    document.getElementById('btn-soul-return').disabled = !canSoulReturn;
     document.getElementById('btn-recover').disabled = game.lostEquipment.length === 0;
 }
 
@@ -4122,6 +4155,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Soul escape - emergency return that costs all souls
+    document.getElementById('btn-soul-escape').onclick = () => {
+        if (game.inTown) return;
+        if (game.player.souls < 10000 || !game.town.hasFeature('soulReturn')) {
+            game.msg('ソウル帰還には10,000魂以上必要（町Lv4で解放）', 'c-red');
+            return;
+        }
+        if (!confirm(`ソウル帰還を使用しますか？\n\n全ソウル（${game.player.souls}魂）を消費して\n装備を守って町に帰還します。`)) {
+            return;
+        }
+        const consumedSouls = game.player.souls;
+        game.player.souls = 0;
+        game.msg(`ソウル帰還！${consumedSouls}魂を消費`, 'c-legend');
+        game.returnToTown();
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('town-screen').style.display = 'block';
+        renderTown();
+    };
+
     document.getElementById('btn-save').onclick = () => {
         game.save();
         game.msg('セーブしました！', 'c-green');
@@ -4241,6 +4293,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('altar-modal').classList.add('active');
     };
     document.getElementById('btn-auto').onclick = () => showAutoExplore();
+    document.getElementById('btn-auto-equip').onclick = () => autoEquip();
+    document.getElementById('btn-soul-return').onclick = () => {
+        alert('ソウル帰還はダンジョン内で使用できます。\n全ソウル消費で装備を守って帰還します。');
+    };
     document.getElementById('btn-stat-alloc').onclick = () => showStatAlloc();
 
     // New modal close buttons
@@ -4296,6 +4352,92 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-start-auto').onclick = () => startAutoExplore();
     document.getElementById('btn-stop-auto').onclick = () => stopAutoExplore();
 });
+
+// ==================== AUTO EQUIP FUNCTION ====================
+function autoEquip() {
+    const p = game.player;
+    let equipped = 0;
+
+    // Collect all equipment from inventory and stash
+    const allEquips = [];
+    for (let i = 0; i < p.inventory.length; i++) {
+        const item = p.inventory[i];
+        if (item.type === 'equip') {
+            allEquips.push({ source: 'inventory', idx: i, item, eq: item.equip });
+        }
+    }
+    for (let i = 0; i < game.town.stash.length; i++) {
+        const item = game.town.stash[i];
+        if (item.type === 'equip') {
+            allEquips.push({ source: 'stash', idx: i, item, eq: item.equip });
+        }
+    }
+
+    // For each slot, find best equipment
+    for (const slot of EQUIP_SLOTS) {
+        let bestEq = null;
+        let bestScore = -9999;
+        let bestEntry = null;
+
+        // Current equipped score
+        const current = p.equipment[slot];
+        if (current) {
+            bestScore = current.calcScore();
+            bestEq = current;
+        }
+
+        // Evaluate candidates
+        for (const entry of allEquips) {
+            const eq = entry.eq;
+            // Check if this equipment fits in this slot
+            const slots = eq.getSlots ? eq.getSlots() : [eq.slot];
+            if (!slots.includes(slot)) continue;
+            // Check requirements
+            if (!p.canEquip(eq)) continue;
+            // Two-handed weapons can't go in off-hand
+            if (eq.isTwoHanded && slot === 'offHand') continue;
+
+            const score = eq.calcScore();
+            if (score > bestScore) {
+                bestScore = score;
+                bestEq = eq;
+                bestEntry = entry;
+            }
+        }
+
+        // Equip the best item if better than current
+        if (bestEntry && bestEq && bestEq !== current) {
+            // Unequip current if exists
+            if (current) {
+                p.inventory.push({ type: 'equip', equip: current });
+            }
+
+            // Remove from source and equip
+            if (bestEntry.source === 'inventory') {
+                p.inventory.splice(bestEntry.idx, 1);
+            } else {
+                game.town.stash.splice(bestEntry.idx, 1);
+            }
+            p.equipment[slot] = bestEq;
+            equipped++;
+
+            // Update indices (items may have shifted)
+            for (const e of allEquips) {
+                if (e.source === bestEntry.source && e.idx > bestEntry.idx) {
+                    e.idx--;
+                }
+            }
+        }
+    }
+
+    if (equipped > 0) {
+        game.msg(`最強装備を自動装着（${equipped}箇所）`, 'c-green');
+    } else {
+        game.msg('より良い装備が見つかりません', 'c-gray');
+    }
+    game.save();
+    renderTown();
+}
 
 // ==================== STASH FUNCTIONS ====================
 let stashMode = 'deposit';
