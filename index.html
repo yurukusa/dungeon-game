@@ -46,18 +46,33 @@
         }
         .hp-fill {
             height: 100%;
-            background: linear-gradient(90deg, #c0392b, #e74c3c);
-            transition: width 0.4s ease-out;
+            transition: width 0.4s ease-out, background 0.3s;
         }
+        .hp-fill.hp-high { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+        .hp-fill.hp-mid { background: linear-gradient(90deg, #d4a017, #f1c40f); }
+        .hp-fill.hp-low { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+        .hp-fill.hp-critical { background: linear-gradient(90deg, #8b0000, #c0392b); animation: hpPulse 0.5s infinite; }
+        @keyframes hpPulse { 50% { opacity: 0.7; } }
         .hp-fill.damage { animation: hpFlash 0.3s ease-out; }
-        @keyframes hpFlash {
-            0% { background: #fff; }
-            100% { background: linear-gradient(90deg, #c0392b, #e74c3c); }
-        }
+        @keyframes hpFlash { 0% { background: #fff; } }
         .hp-fill.heal { animation: hpHeal 0.3s ease-out; }
-        @keyframes hpHeal {
-            0% { background: #2ecc71; }
-            100% { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+        @keyframes hpHeal { 0% { background: #2ecc71; } }
+        /* EXP bar */
+        .exp-bar { width: 60px; height: 8px; background: #333; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; }
+        .exp-fill { height: 100%; background: linear-gradient(90deg, #8e44ad, #9b59b6); transition: width 0.3s; }
+        /* Damage popup */
+        .damage-popup {
+            position: fixed; pointer-events: none; font-weight: bold; font-size: 18px;
+            animation: damageFloat 1s ease-out forwards; z-index: 1000;
+        }
+        @keyframes damageFloat {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-40px) scale(0.8); }
+        }
+        .damage-popup.player-damage { color: #e74c3c; }
+        .damage-popup.enemy-damage { color: #f1c40f; }
+        .damage-popup.heal { color: #2ecc71; }
+        .damage-popup.crit { font-size: 24px; color: #ff6b6b; text-shadow: 0 0 10px #ff0; }
         }
         #main-area {
             display: flex;
@@ -537,10 +552,10 @@
         <div id="game-screen" style="display:none;">
             <div id="header">
                 <span class="stat"><span id="dungeon-name">深淵</span> B<span id="floor">1</span>F</span>
-                <span class="stat">Lv.<span id="level">1</span></span>
-                <span class="stat">HP: <span class="hp-bar"><span class="hp-fill" id="hp-bar"></span></span> <span id="hp">50</span>/<span id="max-hp">50</span></span>
-                <span class="stat c-rare">G: <span id="gold">0</span></span>
-                <span class="stat c-flame">魂: <span id="souls">0</span></span>
+                <span class="stat">Lv.<span id="level">1</span> <span class="exp-bar"><span class="exp-fill" id="exp-bar"></span></span></span>
+                <span class="stat">HP: <span class="hp-bar"><span class="hp-fill hp-high" id="hp-bar"></span></span> <span id="hp">50</span>/<span id="max-hp">50</span></span>
+                <span class="stat c-rare">G:<span id="gold">0</span></span>
+                <span class="stat c-flame">魂:<span id="souls">0</span></span>
             </div>
             <div id="main-area">
                 <div id="map-container">
@@ -2023,6 +2038,7 @@ class Game {
         // Apply damage
         enemy.hp -= total;
         this.msg(`${crit?'CRIT! ':''}${enemy.name}に${total}dmg`, crit?'c-rare':'');
+        showDamagePopup(enemy.x, enemy.y, total, crit ? 'crit' : 'enemy-damage');
 
         // Set effect: shadow_stitch (crit stuns enemy)
         if (crit && setEffects.includes('shadow_stitch') && enemy.hp > 0) {
@@ -2325,6 +2341,7 @@ class Game {
                 this.player.hp -= total;
                 if (total > 0) {
                     this.msg(`${e.name}から${total}dmg！`, 'c-red');
+                    showDamagePopup(this.player.x, this.player.y, total, 'player-damage');
                 }
 
                 // Reflect damage (equipment effect + set effect)
@@ -3688,6 +3705,26 @@ function flashHpBar(type) {
     setTimeout(() => hpBar.classList.remove(type), 300);
 }
 
+// ダメージポップアップ表示
+function showDamagePopup(x, y, amount, type = 'enemy-damage') {
+    const popup = document.createElement('div');
+    popup.className = `damage-popup ${type}`;
+    popup.textContent = type === 'heal' ? `+${amount}` : `-${amount}`;
+
+    // マップエリア基準で位置計算
+    const mapEl = document.getElementById('map');
+    const mapRect = mapEl.getBoundingClientRect();
+    // 1文字の幅を概算（等幅フォント）
+    const charWidth = mapRect.width / MAP_WIDTH;
+    const charHeight = mapRect.height / MAP_HEIGHT;
+
+    popup.style.left = (mapRect.left + x * charWidth + charWidth / 2) + 'px';
+    popup.style.top = (mapRect.top + y * charHeight) + 'px';
+
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 1000);
+}
+
 function render() {
     if (!game || !game.player || !game.dungeon) return;
 
@@ -3703,7 +3740,21 @@ function render() {
     document.getElementById('level').textContent = game.player.level;
     document.getElementById('hp').textContent = currentHp;
     document.getElementById('max-hp').textContent = stats.maxHp;
-    document.getElementById('hp-bar').style.width = (currentHp / stats.maxHp * 100) + '%';
+
+    // HPバー更新：幅と色状態
+    const hpPercent = currentHp / stats.maxHp * 100;
+    const hpBar = document.getElementById('hp-bar');
+    hpBar.style.width = hpPercent + '%';
+    hpBar.classList.remove('hp-high', 'hp-mid', 'hp-low', 'hp-critical');
+    if (hpPercent > 60) hpBar.classList.add('hp-high');
+    else if (hpPercent > 30) hpBar.classList.add('hp-mid');
+    else if (hpPercent > 15) hpBar.classList.add('hp-low');
+    else hpBar.classList.add('hp-critical');
+
+    // EXPバー更新
+    const expPercent = Math.min(100, (game.player.exp / game.player.expNext) * 100);
+    document.getElementById('exp-bar').style.width = expPercent + '%';
+
     document.getElementById('gold').textContent = game.player.gold;
     document.getElementById('souls').textContent = game.player.souls;
     document.getElementById('floor').textContent = game.floor;
@@ -3976,12 +4027,27 @@ function showItemDetail(idx) {
             if (eq.reqInt) html += `<span class="${pStats.int >= eq.reqInt ? 'c-green' : 'c-red'}">INT:${eq.reqInt}</span>`;
             html += `</div>`;
         }
+        // 現在装備との比較
+        const equipType = EQUIP_TYPES[eq.type];
+        const targetSlot = equipType.slots[0];  // 最初のスロットと比較
+        const currentEq = game.player.equipment[targetSlot];
+        const currentStats = currentEq ? currentEq.getTotalStats() : {};
+
         html += `<div class="c-gray" style="margin-top:10px;">--- ステータス ---</div>`;
-        for (const k in stats) {
-            if (stats[k] !== 0) {
-                const isNeg = stats[k] < 0;
-                html += `<div class="${isNeg?'negative':''}">${formatStat(k)}: ${stats[k]>0?'+':''}${stats[k]}</div>`;
+        const allKeys = new Set([...Object.keys(stats), ...Object.keys(currentStats)]);
+        for (const k of allKeys) {
+            const newVal = stats[k] || 0;
+            const oldVal = currentStats[k] || 0;
+            if (newVal === 0 && oldVal === 0) continue;
+            const diff = newVal - oldVal;
+            const isNeg = newVal < 0;
+            let diffStr = '';
+            if (currentEq && diff !== 0) {
+                diffStr = diff > 0
+                    ? ` <span class="c-green">(+${diff})</span>`
+                    : ` <span class="c-red">(${diff})</span>`;
             }
+            html += `<div class="${isNeg?'negative':''}">${formatStat(k)}: ${newVal>0?'+':''}${newVal}${diffStr}</div>`;
         }
         // Show unique effects
         if (eq.uniqueEffects && Object.keys(eq.uniqueEffects).length > 0) {
@@ -4073,6 +4139,9 @@ function usePotion(idx) {
         game.player.hp += heal;
         game.player.inventory.splice(idx, 1);
         game.msg(`HP +${heal}`, 'c-green');
+        if (!game.inTown && heal > 0) {
+            showDamagePopup(game.player.x, game.player.y, heal, 'heal');
+        }
         document.getElementById('inventory-modal').classList.remove('active');
         if (game.inTown) renderTown(); else render();
     }
@@ -4621,6 +4690,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     modalCursor = (modalCursor + 1) % items.length;
                 }
                 updateModalCursor(activeModal, items);
+                e.preventDefault();
+            } else if (isSelect && activeModal.id === 'inventory-modal' && selectedItemIdx >= 0) {
+                // インベントリで既にアイテム選択中→直接アクション
+                const item = game.player.inventory[selectedItemIdx];
+                if (item) {
+                    if (item.type === 'potion') {
+                        usePotion(selectedItemIdx);
+                    } else {
+                        equipItem(selectedItemIdx);
+                    }
+                }
                 e.preventDefault();
             } else if (isSelect && items.length > 0 && items[modalCursor]) {
                 items[modalCursor].click();
