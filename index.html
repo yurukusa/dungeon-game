@@ -22,13 +22,17 @@
         }
         #header {
             background: #16213e;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            padding: 8px 10px;
+            border-radius: 0 0 8px 8px;
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            margin: -10px -10px 10px -10px;
+            width: calc(100% + 20px);
         }
         .stat { font-size: 14px; }
         .hp-bar {
@@ -40,7 +44,21 @@
             display: inline-block;
             vertical-align: middle;
         }
-        .hp-fill { height: 100%; background: #e74c3c; transition: width 0.3s; }
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #c0392b, #e74c3c);
+            transition: width 0.4s ease-out;
+        }
+        .hp-fill.damage { animation: hpFlash 0.3s ease-out; }
+        @keyframes hpFlash {
+            0% { background: #fff; }
+            100% { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+        }
+        .hp-fill.heal { animation: hpHeal 0.3s ease-out; }
+        @keyframes hpHeal {
+            0% { background: #2ecc71; }
+            100% { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+        }
         #main-area {
             display: flex;
             gap: 10px;
@@ -327,16 +345,27 @@
             margin-top: 20px;
         }
         .town-btn {
-            padding: 12px 20px;
+            padding: 12px 16px;
             background: #2d4a6a;
             border: none;
             border-radius: 8px;
             color: #fff;
+            font-size: 14px;
             cursor: pointer;
             font-size: 14px;
         }
         .town-btn:hover { background: #4a6a8a; }
-        .town-btn:disabled { background: #333; color: #666; }
+        .town-btn:disabled { background: #333; color: #666; display: none; }
+        .town-btn.primary-btn {
+            background: linear-gradient(135deg, #2d6a4f, #1a5a3f);
+            font-size: 16px;
+            padding: 15px 25px;
+            border: 2px solid #3da871;
+        }
+        .town-btn.primary-btn:hover { background: linear-gradient(135deg, #3d8a6f, #2d6a4f); }
+        .town-btn.sub-btn { background: #444; font-size: 12px; padding: 8px 15px; }
+        .town-btn.sub-btn:hover { background: #555; }
+        .town-btn.feature-btn { font-size: 13px; }
         .soul-bar {
             background: #0f0f23;
             border-radius: 8px;
@@ -441,22 +470,17 @@
                 <span class="c-cyan">次のレベル: <span id="town-next">50</span></span>
             </div>
             <div class="npc-dialogue" id="npc-dialogue"></div>
-            <div class="town-menu">
-                <button class="town-btn" id="btn-bonfire" title="死亡時の装備回収">焚き火</button>
-                <button class="town-btn" id="btn-dungeon" title="ダンジョンを選択して探索開始">ダンジョンへ</button>
-                <button class="town-btn" id="btn-offer-souls" title="魂を捧げて町を発展させる">魂を捧げる</button>
-                <button class="town-btn" id="btn-stash" disabled title="装備を100個まで保管（Lv2で解放）">保管箱</button>
-                <button class="town-btn" id="btn-shop" disabled title="装備やポーションを売買（Lv3で解放）">商人</button>
-                <button class="town-btn" id="btn-forge" disabled title="装備の強化・改造（Lv4で解放）">鍛冶</button>
-                <button class="town-btn" id="btn-altar" disabled title="特殊な儀式（Lv5で解放）">祭壇</button>
-                <button class="town-btn" id="btn-auto" disabled title="自動でダンジョン探索（Lv3で解放）">自動探索</button>
-                <button class="town-btn" id="btn-auto-equip" disabled title="最強装備を自動装着（Lv2で解放）">自動装備</button>
-                <button class="town-btn" id="btn-soul-return" disabled title="ダンジョン内で使用可能。全魂消費で緊急帰還（Lv4 & 1万魂）">ソウル帰還</button>
-                <button class="town-btn" id="btn-recover" disabled title="死亡時に失った装備を魂で回収">装備回収</button>
-                <button class="town-btn" id="btn-town-inv" title="持ち物を確認・整理">持ち物</button>
-                <button class="town-btn" id="btn-stat-alloc" title="レベルアップで得たポイントを割り振り">ステ振り</button>
-                <button class="town-btn" id="btn-town-status" title="プレイヤーの詳細ステータス">ステータス</button>
-                <button class="town-btn" id="btn-town-save" title="ゲームをセーブ">セーブ</button>
+            <!-- メインアクション（常に表示） -->
+            <div class="town-menu" id="town-menu-main" style="margin-bottom:10px;">
+                <button class="town-btn primary-btn" id="btn-dungeon">探索へ</button>
+                <button class="town-btn" id="btn-town-inv">持ち物</button>
+                <button class="town-btn" id="btn-town-status">ステータス</button>
+            </div>
+            <!-- 町機能（解放済みのみ表示） -->
+            <div class="town-menu" id="town-menu-features"></div>
+            <!-- サブメニュー -->
+            <div class="town-menu" id="town-menu-sub" style="margin-top:10px;">
+                <button class="town-btn sub-btn" id="btn-town-save">セーブ</button>
             </div>
         </div>
 
@@ -502,14 +526,17 @@
         </div>
     </div>
 
-    <!-- Inventory Modal -->
+    <!-- Inventory Modal (Redesigned for mobile) -->
     <div class="modal" id="inventory-modal">
-        <div class="modal-content">
+        <div class="modal-content" style="display:flex;flex-direction:column;max-height:85vh;">
             <div class="modal-title">INVENTORY (<span id="inv-count">0</span>/20)</div>
-            <div class="c-gray" style="font-size:0.7em;margin-bottom:5px;">← スワイプ: 捨/魂化 | スワイプ →: 装備/使用</div>
-            <ul class="item-list" id="inventory-list"></ul>
-            <div id="item-detail" class="equip-detail" style="display:none;"></div>
-            <button class="close-btn" id="close-inventory">Close</button>
+            <div id="item-detail" class="equip-detail" style="display:none;max-height:40vh;overflow-y:auto;"></div>
+            <div style="flex:1;overflow-y:auto;min-height:100px;">
+                <ul class="item-list" id="inventory-list"></ul>
+            </div>
+            <div style="display:flex;gap:5px;margin-top:10px;">
+                <button class="close-btn" id="close-inventory" style="flex:1;">閉じる</button>
+            </div>
         </div>
     </div>
 
@@ -3596,14 +3623,32 @@ function statKeyMap(k) {
 }
 
 // ==================== RENDERING ====================
+let lastRenderedHp = -1;  // 前回描画時のHP
+
+function flashHpBar(type) {
+    const hpBar = document.getElementById('hp-bar');
+    hpBar.classList.remove('damage', 'heal');
+    void hpBar.offsetWidth;  // Force reflow
+    hpBar.classList.add(type);
+    setTimeout(() => hpBar.classList.remove(type), 300);
+}
+
 function render() {
     if (!game || !game.player || !game.dungeon) return;
 
     const stats = game.player.getStats();
+    const currentHp = game.player.hp;
+
+    // HPが変化したらフラッシュエフェクト
+    if (lastRenderedHp >= 0 && currentHp !== lastRenderedHp) {
+        flashHpBar(currentHp < lastRenderedHp ? 'damage' : 'heal');
+    }
+    lastRenderedHp = currentHp;
+
     document.getElementById('level').textContent = game.player.level;
-    document.getElementById('hp').textContent = game.player.hp;
+    document.getElementById('hp').textContent = currentHp;
     document.getElementById('max-hp').textContent = stats.maxHp;
-    document.getElementById('hp-bar').style.width = (game.player.hp / stats.maxHp * 100) + '%';
+    document.getElementById('hp-bar').style.width = (currentHp / stats.maxHp * 100) + '%';
     document.getElementById('gold').textContent = game.player.gold;
     document.getElementById('souls').textContent = game.player.souls;
     document.getElementById('floor').textContent = game.floor;
@@ -3694,6 +3739,7 @@ function renderTown() {
 
     // NPC dialogue
     let dialogue;
+    const isFirstVisit = town.firstVisit;
     if (town.firstVisit) {
         dialogue = NPC_DIALOGUE.firstMeeting;
         town.firstVisit = false;
@@ -3706,17 +3752,68 @@ function renderTown() {
     }
     document.getElementById('npc-dialogue').textContent = dialogue;
 
-    // Enable/disable buttons
-    document.getElementById('btn-stash').disabled = !town.hasFeature('stash');
-    document.getElementById('btn-shop').disabled = !town.hasFeature('shop');
-    document.getElementById('btn-forge').disabled = !town.hasFeature('forge');
-    document.getElementById('btn-altar').disabled = !town.hasFeature('altar');
-    document.getElementById('btn-auto').disabled = !town.hasFeature('autoExplore');
-    document.getElementById('btn-auto-equip').disabled = !town.hasFeature('autoEquip');
-    // Soul return requires 10,000+ souls and town level 4
-    const canSoulReturn = town.hasFeature('soulReturn') && game.player.souls >= 10000;
-    document.getElementById('btn-soul-return').disabled = !canSoulReturn;
-    document.getElementById('btn-recover').disabled = game.lostEquipment.length === 0;
+    // 動的に機能メニューを構築（解放済みのみ表示）
+    let featuresHtml = '';
+
+    // 魂関連（常に表示）
+    if (game.player.souls > 0 || town.totalSoulsOffered > 0) {
+        featuresHtml += `<button class="town-btn feature-btn" id="btn-offer-souls">魂を捧げる</button>`;
+    }
+
+    // 装備回収（失った装備がある時のみ）
+    if (game.lostEquipment.length > 0) {
+        featuresHtml += `<button class="town-btn feature-btn" id="btn-recover" style="background:#8b4513;">装備回収</button>`;
+    }
+
+    // ステ振り（未割当ポイントがある時のみ）
+    if (game.player.statPoints > 0) {
+        featuresHtml += `<button class="town-btn feature-btn" id="btn-stat-alloc" style="background:#6a4c93;">ステ振り (${game.player.statPoints})</button>`;
+    }
+
+    // Lv1解放: ソウル化（ダンジョン内で装備→魂）
+    if (town.hasFeature('soulConvert')) {
+        // インベントリに含まれるので別ボタン不要
+    }
+
+    // Lv2解放: 保管箱、自動装備
+    if (town.hasFeature('stash')) {
+        featuresHtml += `<button class="town-btn feature-btn" id="btn-stash">保管箱</button>`;
+    }
+    if (town.hasFeature('autoEquip')) {
+        featuresHtml += `<button class="town-btn feature-btn" id="btn-auto-equip">自動装備</button>`;
+    }
+
+    // Lv3解放: 商人、自動探索
+    if (town.hasFeature('shop')) {
+        featuresHtml += `<button class="town-btn feature-btn" id="btn-shop">商人</button>`;
+    }
+    if (town.hasFeature('autoExplore')) {
+        featuresHtml += `<button class="town-btn feature-btn" id="btn-auto">自動探索</button>`;
+    }
+
+    // Lv4解放: 鍛冶、ソウル帰還
+    if (town.hasFeature('forge')) {
+        featuresHtml += `<button class="town-btn feature-btn" id="btn-forge">鍛冶</button>`;
+    }
+
+    // Lv5解放: 祭壇
+    if (town.hasFeature('altar')) {
+        featuresHtml += `<button class="town-btn feature-btn" id="btn-altar">祭壇</button>`;
+    }
+
+    document.getElementById('town-menu-features').innerHTML = featuresHtml;
+
+    // 動的に生成されたボタンにハンドラを設定
+    const btn = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+    btn('btn-offer-souls', () => document.getElementById('offer-modal').classList.add('active'));
+    btn('btn-recover', () => document.getElementById('recover-modal').classList.add('active'));
+    btn('btn-stat-alloc', () => showStatAlloc());
+    btn('btn-stash', () => showStash());
+    btn('btn-auto-equip', () => autoEquip());
+    btn('btn-shop', () => showShop());
+    btn('btn-auto', () => showAutoExplore());
+    btn('btn-forge', () => showForge());
+    btn('btn-altar', () => document.getElementById('altar-modal').classList.add('active'));
 }
 
 function renderInventory() {
@@ -4473,11 +4570,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showRecovery();
     };
 
-    // Town buttons
-    document.getElementById('btn-bonfire').onclick = () => showBonfireMenu();
+    // Town buttons (main menu - always exist)
     document.getElementById('btn-dungeon').onclick = () => showDungeonSelect();
-    document.getElementById('btn-offer-souls').onclick = () => showOfferSouls();
-    document.getElementById('btn-recover').onclick = () => showRecovery();
     document.getElementById('btn-town-inv').onclick = () => {
         renderInventory();
         document.getElementById('inventory-modal').classList.add('active');
@@ -4544,19 +4638,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-continue').disabled = !localStorage.getItem('dungeonSave');
     };
 
-    // New town buttons
-    document.getElementById('btn-stash').onclick = () => showStash();
-    document.getElementById('btn-shop').onclick = () => showShop();
-    document.getElementById('btn-forge').onclick = () => showForge();
-    document.getElementById('btn-altar').onclick = () => {
-        document.getElementById('altar-modal').classList.add('active');
-    };
-    document.getElementById('btn-auto').onclick = () => showAutoExplore();
-    document.getElementById('btn-auto-equip').onclick = () => autoEquip();
-    document.getElementById('btn-soul-return').onclick = () => {
-        alert('ソウル帰還はダンジョン内で使用できます。\n全ソウル消費で装備を守って帰還します。');
-    };
-    document.getElementById('btn-stat-alloc').onclick = () => showStatAlloc();
+    // Town feature buttons are now dynamically generated in renderTown()
 
     // New modal close buttons
     document.getElementById('close-stash').onclick = () => {
