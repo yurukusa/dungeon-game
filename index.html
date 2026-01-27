@@ -4119,7 +4119,8 @@ function doEquip(idx, slot) {
     }
     game.msg(`${eq.name}を装備`, RARITY[eq.rarity].cls);
     document.getElementById('equip-modal').classList.remove('active');
-    document.getElementById('inventory-modal').classList.remove('active');
+    // インベントリは開いたまま更新
+    renderInventory();
     if (game.inTown) renderTown(); else render();
 }
 
