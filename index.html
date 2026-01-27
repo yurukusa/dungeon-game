@@ -174,6 +174,11 @@
         }
         .item-row:hover { background: #3a3a5e; }
         .item-row.selected { border: 2px solid #f1c40f; }
+        .keyboard-selected {
+            outline: 2px solid #3498db !important;
+            outline-offset: 2px;
+            background: #3a3a5e !important;
+        }
         .item-row .swipe-action {
             position: absolute;
             top: 0;
@@ -4449,25 +4454,72 @@ document.addEventListener('DOMContentLoaded', () => {
         }, {passive: true});
     }
 
+    // キーボードナビゲーション状態
+    let modalCursor = 0;
+
+    function getModalItems(modal) {
+        return modal.querySelectorAll('.item-row, .town-btn, .dungeon-item, button:not(.close-btn)');
+    }
+
+    function updateModalCursor(modal, items) {
+        items.forEach((item, i) => {
+            item.classList.toggle('keyboard-selected', i === modalCursor);
+        });
+        if (items[modalCursor]) {
+            items[modalCursor].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+    }
+
     // Keyboard
     document.addEventListener('keydown', e => {
         if (!game || game.gameOver) return;
-        if (document.querySelector('.modal.active')) return;
-        if (game.inTown) return;
-        const keys = {w:[0,-1],a:[-1,0],s:[0,1],d:[1,0],ArrowUp:[0,-1],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowRight:[1,0]};
-        if (keys[e.key]) {
-            game.move(keys[e.key][0], keys[e.key][1]);
-            render();
-            e.preventDefault();
-        } else if (e.key === 'Enter') {
-            game.descend();
-            render();
-        } else if (e.key === 'i') {
-            renderInventory();
-            document.getElementById('inventory-modal').classList.add('active');
-        } else if (e.key === 'c') {
-            renderStatus();
-            document.getElementById('status-modal').classList.add('active');
+
+        // モーダルが開いている時のナビゲーション
+        const activeModal = document.querySelector('.modal.active');
+        if (activeModal) {
+            const items = getModalItems(activeModal);
+            const isNav = ['w','s','ArrowUp','ArrowDown'].includes(e.key);
+            const isSelect = e.key === 'Enter' || e.key === ' ';
+            const isClose = e.key === 'Escape' || e.key === 'q';
+
+            if (isNav && items.length > 0) {
+                if (e.key === 'w' || e.key === 'ArrowUp') {
+                    modalCursor = (modalCursor - 1 + items.length) % items.length;
+                } else {
+                    modalCursor = (modalCursor + 1) % items.length;
+                }
+                updateModalCursor(activeModal, items);
+                e.preventDefault();
+            } else if (isSelect && items.length > 0 && items[modalCursor]) {
+                items[modalCursor].click();
+                e.preventDefault();
+            } else if (isClose) {
+                const closeBtn = activeModal.querySelector('.close-btn');
+                if (closeBtn) closeBtn.click();
+                modalCursor = 0;
+                e.preventDefault();
+            }
+            return;
+        }
+
+        // ダンジョン内のキーボード操作
+        if (!game.inTown) {
+            const keys = {w:[0,-1],a:[-1,0],s:[0,1],d:[1,0],ArrowUp:[0,-1],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowRight:[1,0]};
+            if (keys[e.key]) {
+                game.move(keys[e.key][0], keys[e.key][1]);
+                render();
+                e.preventDefault();
+            } else if (e.key === 'Enter') {
+                game.descend();
+                render();
+            } else if (e.key === 'i') {
+                renderInventory();
+                document.getElementById('inventory-modal').classList.add('active');
+                modalCursor = 0;
+            } else if (e.key === 'c') {
+                renderStatus();
+                document.getElementById('status-modal').classList.add('active');
+            }
         }
     });
 
