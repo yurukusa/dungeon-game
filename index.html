@@ -4413,16 +4413,48 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTown();
     };
 
-    // Movement
+    // Movement with long press support
+    let moveInterval = null;
+    let moveTimeout = null;
+    const LONG_PRESS_DELAY = 300;  // 長押し判定までの時間
+    const MOVE_INTERVAL = 150;     // 連続移動の間隔
+
+    function doMove(dir) {
+        const moves = {up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+        if (moves[dir] && !game.inTown && !document.querySelector('.modal.active')) {
+            game.move(moves[dir][0], moves[dir][1]);
+            render();
+        }
+    }
+
+    function startContinuousMove(dir) {
+        stopContinuousMove();
+        doMove(dir);  // 最初の移動
+        moveTimeout = setTimeout(() => {
+            moveInterval = setInterval(() => doMove(dir), MOVE_INTERVAL);
+        }, LONG_PRESS_DELAY);
+    }
+
+    function stopContinuousMove() {
+        if (moveTimeout) { clearTimeout(moveTimeout); moveTimeout = null; }
+        if (moveInterval) { clearInterval(moveInterval); moveInterval = null; }
+    }
+
     document.querySelectorAll('.ctrl-btn').forEach(btn => {
-        btn.onclick = () => {
-            const dir = btn.dataset.dir;
-            const moves = {up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
-            if (moves[dir] && !game.inTown) {
-                game.move(moves[dir][0], moves[dir][1]);
-                render();
-            }
-        };
+        const dir = btn.dataset.dir;
+        // タップ（短押し）
+        btn.onclick = () => doMove(dir);
+        // 長押し（タッチ）
+        btn.addEventListener('touchstart', e => {
+            e.preventDefault();
+            startContinuousMove(dir);
+        });
+        btn.addEventListener('touchend', stopContinuousMove);
+        btn.addEventListener('touchcancel', stopContinuousMove);
+        // 長押し（マウス）
+        btn.addEventListener('mousedown', () => startContinuousMove(dir));
+        btn.addEventListener('mouseup', stopContinuousMove);
+        btn.addEventListener('mouseleave', stopContinuousMove);
     });
 
     // Touch/Swipe support for game movement (on map area)
@@ -4497,6 +4529,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const closeBtn = activeModal.querySelector('.close-btn');
                 if (closeBtn) closeBtn.click();
                 modalCursor = 0;
+                e.preventDefault();
+            } else if (e.key === 'x' && activeModal.id === 'inventory-modal') {
+                // Xキーで捨てる/ソウル化
+                if (selectedItemIdx >= 0) {
+                    const canSoulify = game.inTown && game.town.hasFeature('soulConvert');
+                    if (canSoulify) soulifyItem(selectedItemIdx);
+                    else dropItem(selectedItemIdx);
+                }
+                e.preventDefault();
+            } else if (/^[1-9]$/.test(e.key) && items.length > 0) {
+                // 数字キーで直接選択
+                const idx = parseInt(e.key) - 1;
+                if (idx < items.length) {
+                    modalCursor = idx;
+                    updateModalCursor(activeModal, items);
+                    items[idx].click();
+                }
                 e.preventDefault();
             }
             return;
