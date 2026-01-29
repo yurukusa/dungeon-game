@@ -3785,7 +3785,7 @@ function renderTown() {
 
     // 動的に生成されたボタンにハンドラを設定
     const btn = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
-    btn('btn-offer-souls', () => document.getElementById('offer-modal').classList.add('active'));
+    btn('btn-offer-souls', () => showOfferSouls());
     btn('btn-recover', () => document.getElementById('recover-modal').classList.add('active'));
     btn('btn-stat-alloc', () => showStatAlloc());
     btn('btn-stash', () => showStash());
