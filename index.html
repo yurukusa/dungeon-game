@@ -2,242 +2,349 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>DUNG: Azure Flame</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>DUNG: Azure Flame</title>
+    <style>
+        /* ===== CSS Variables ===== */
+        :root {
+            /* Colors */
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f0f23;
+            --bg-item: #2a2a4e;
+            --bg-item-hover: #3a3a5e;
+            --border-primary: #4a4a6a;
+            --border-secondary: #333;
+
+            /* Text Colors */
+            --text-primary: #eee;
+            --text-secondary: #888;
+            --text-muted: #666;
+
+            /* Rarity Colors */
+            --color-normal: #fff;
+            --color-magic: #3498db;
+            --color-rare: #f1c40f;
+            --color-unique: #e67e22;
+            --color-legend: #9b59b6;
+            --color-set: #2ecc71;
+            --color-flame: #3498db;
+
+            /* Status Colors */
+            --color-hp-high: linear-gradient(90deg, #27ae60, #2ecc71);
+            --color-hp-mid: linear-gradient(90deg, #d4a017, #f1c40f);
+            --color-hp-low: linear-gradient(90deg, #c0392b, #e74c3c);
+            --color-hp-critical: linear-gradient(90deg, #8b0000, #c0392b);
+            --color-exp: linear-gradient(90deg, #8e44ad, #9b59b6);
+
+            /* Semantic Colors */
+            --color-success: #27ae60;
+            --color-danger: #e74c3c;
+            --color-warning: #f1c40f;
+            --color-info: #00bcd4;
+
+            /* Spacing */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 10px;
+            --spacing-lg: 15px;
+            --spacing-xl: 20px;
+
+            /* Border Radius */
+            --radius-sm: 4px;
+            --radius-md: 8px;
+
+            /* Transitions */
+            --transition-fast: 0.15s ease-out;
+            --transition-normal: 0.3s ease-out;
+            --transition-slow: 0.4s ease-out;
+
+            /* Font Sizes */
+            --font-xs: 10px;
+            --font-sm: 12px;
+            --font-md: 14px;
+            --font-lg: 16px;
+            --font-xl: 18px;
+            --font-xxl: 24px;
+            --font-title: 64px;
+
+            /* Z-Index Layers */
+            --z-header: 50;
+            --z-modal: 100;
+            --z-popup: 1000;
+        }
+
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
         body {
-            background: #1a1a2e;
-            color: #eee;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-family: 'Courier New', monospace;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 10px;
+            padding: var(--spacing-md);
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            overscroll-behavior: none;
+            touch-action: manipulation;
         }
+
+        /* ===== Layout ===== */
         #game-container {
             max-width: 800px;
             width: 100%;
+            contain: layout style;
         }
+
         #header {
-            background: #16213e;
-            padding: 8px 10px;
-            border-radius: 0 0 8px 8px;
+            background: var(--bg-secondary);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: var(--spacing-sm);
             position: sticky;
             top: 0;
-            z-index: 50;
-            margin: -10px -10px 10px -10px;
-            width: calc(100% + 20px);
+            z-index: var(--z-header);
+            margin: calc(-1 * var(--spacing-md)) calc(-1 * var(--spacing-md)) var(--spacing-md) calc(-1 * var(--spacing-md));
+            width: calc(100% + var(--spacing-xl));
+            will-change: transform;
         }
-        .stat { font-size: 14px; }
-        .hp-bar {
-            width: 100px;
+
+        .stat { font-size: var(--font-md); white-space: nowrap; }
+
+        /* ===== HP/EXP Bars ===== */
+        .hp-bar, .exp-bar {
             height: 12px;
-            background: #333;
-            border-radius: 4px;
+            background: var(--border-secondary);
+            border-radius: var(--radius-sm);
             overflow: hidden;
             display: inline-block;
             vertical-align: middle;
         }
-        .hp-fill {
+        .hp-bar { width: 100px; }
+        .exp-bar { width: 60px; height: 8px; }
+
+        .hp-fill, .exp-fill {
             height: 100%;
-            transition: width 0.4s ease-out, background 0.3s;
+            transition: width var(--transition-slow), background var(--transition-normal);
+            will-change: width;
         }
-        .hp-fill.hp-high { background: linear-gradient(90deg, #27ae60, #2ecc71); }
-        .hp-fill.hp-mid { background: linear-gradient(90deg, #d4a017, #f1c40f); }
-        .hp-fill.hp-low { background: linear-gradient(90deg, #c0392b, #e74c3c); }
-        .hp-fill.hp-critical { background: linear-gradient(90deg, #8b0000, #c0392b); animation: hpPulse 0.5s infinite; }
+        .hp-fill.hp-high { background: var(--color-hp-high); }
+        .hp-fill.hp-mid { background: var(--color-hp-mid); }
+        .hp-fill.hp-low { background: var(--color-hp-low); }
+        .hp-fill.hp-critical { background: var(--color-hp-critical); animation: hpPulse 0.5s infinite; }
+        .exp-fill { background: var(--color-exp); }
+
         @keyframes hpPulse { 50% { opacity: 0.7; } }
         .hp-fill.damage { animation: hpFlash 0.3s ease-out; }
         @keyframes hpFlash { 0% { background: #fff; } }
         .hp-fill.heal { animation: hpHeal 0.3s ease-out; }
-        @keyframes hpHeal { 0% { background: #2ecc71; } }
-        /* EXP bar */
-        .exp-bar { width: 60px; height: 8px; background: #333; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; }
-        .exp-fill { height: 100%; background: linear-gradient(90deg, #8e44ad, #9b59b6); transition: width 0.3s; }
-        /* Damage popup */
+        @keyframes hpHeal { 0% { background: var(--color-success); } }
+
+        /* ===== Damage Popup ===== */
         .damage-popup {
-            position: fixed; pointer-events: none; font-weight: bold; font-size: 18px;
-            animation: damageFloat 1s ease-out forwards; z-index: 1000;
+            position: fixed;
+            pointer-events: none;
+            font-weight: bold;
+            font-size: var(--font-xl);
+            animation: damageFloat 1s ease-out forwards;
+            z-index: var(--z-popup);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            will-change: transform, opacity;
         }
         @keyframes damageFloat {
             0% { opacity: 1; transform: translateY(0) scale(1); }
             100% { opacity: 0; transform: translateY(-40px) scale(0.8); }
         }
-        .damage-popup.player-damage { color: #e74c3c; }
-        .damage-popup.enemy-damage { color: #f1c40f; }
-        .damage-popup.heal { color: #2ecc71; }
-        .damage-popup.crit { font-size: 24px; color: #ff6b6b; text-shadow: 0 0 10px #ff0; }
-        }
+        .damage-popup.player-damage { color: var(--color-danger); }
+        .damage-popup.enemy-damage { color: var(--color-rare); }
+        .damage-popup.heal { color: var(--color-success); }
+        .damage-popup.crit { font-size: var(--font-xxl); color: #ff6b6b; text-shadow: 0 0 10px #ff0; }
+
+        /* ===== Map ===== */
         #main-area {
             display: flex;
-            gap: 10px;
+            gap: var(--spacing-md);
             flex-wrap: wrap;
         }
+
         #map-container {
-            background: #0f0f23;
-            border: 2px solid #4a4a6a;
-            border-radius: 8px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-primary);
+            border-radius: var(--radius-md);
             padding: 3px;
             width: 100%;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
+
         #map {
             font-family: monospace;
-            font-size: 24px;
+            font-size: clamp(18px, 4vw, 24px);
             line-height: 1.1;
             white-space: pre;
             letter-spacing: 2px;
+            contain: content;
         }
+
+        /* ===== Side Panel & Messages ===== */
         #side-panel {
-            background: #16213e;
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 12px;
-            margin-top: 10px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            font-size: var(--font-sm);
+            margin-top: var(--spacing-md);
         }
+
         #messages {
-            background: #0f0f23;
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-md);
             min-height: 60px;
-            font-size: 12px;
+            font-size: var(--font-sm);
+            max-height: 120px;
+            overflow-y: auto;
         }
         .msg { margin: 2px 0; }
+
+        /* ===== Controls ===== */
         #controls {
-            margin-top: 10px;
+            margin-top: var(--spacing-md);
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 5px;
         }
         .ctrl-row { display: flex; gap: 5px; }
+
         .ctrl-btn {
             width: 50px;
             height: 50px;
             font-size: 20px;
-            background: #4a4a6a;
+            background: var(--border-primary);
             border: none;
-            border-radius: 8px;
-            color: #fff;
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
             cursor: pointer;
             touch-action: manipulation;
+            transition: background var(--transition-fast), transform var(--transition-fast);
+            -webkit-user-select: none;
+            user-select: none;
         }
-        .ctrl-btn:active { background: #6a6a8a; }
+        .ctrl-btn:active {
+            background: #6a6a8a;
+            transform: scale(0.95);
+        }
+
         .action-btns {
             display: flex;
             gap: 5px;
-            margin-top: 10px;
+            margin-top: var(--spacing-md);
             flex-wrap: wrap;
             justify-content: center;
         }
+
         .action-btn {
-            padding: 10px 15px;
+            padding: var(--spacing-md) var(--spacing-lg);
             background: #2d4a6a;
             border: none;
-            border-radius: 8px;
-            color: #fff;
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
             cursor: pointer;
-            font-size: 14px;
+            font-size: var(--font-md);
+            transition: background var(--transition-fast), transform var(--transition-fast);
         }
-        .action-btn:active { background: #4a6a8a; }
-        .action-btn.flame { background: #1e3a5f; border: 1px solid #3498db; }
-        /* Modal */
+        .action-btn:active {
+            background: #4a6a8a;
+            transform: scale(0.97);
+        }
+        .action-btn.flame {
+            background: #1e3a5f;
+            border: 1px solid var(--color-magic);
+        }
+
+        /* ===== Modal ===== */
         .modal {
             display: none;
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 100;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: var(--z-modal);
             justify-content: center;
             align-items: center;
+            padding: var(--spacing-md);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
         }
         .modal.active { display: flex; }
+
         .modal-content {
-            background: #1a1a2e;
-            border: 2px solid #4a4a6a;
-            border-radius: 8px;
-            padding: 20px;
+            background: var(--bg-primary);
+            border: 2px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-xl);
             max-width: 90%;
             max-height: 80%;
             overflow-y: auto;
             min-width: 300px;
+            animation: modalFadeIn 0.2s ease-out;
+            overscroll-behavior: contain;
         }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
         .modal-title {
-            font-size: 18px;
-            color: #f1c40f;
-            margin-bottom: 15px;
+            font-size: var(--font-xl);
+            color: var(--color-rare);
+            margin-bottom: var(--spacing-lg);
             text-align: center;
         }
+
+        /* ===== Item List ===== */
         .item-list { list-style: none; }
+
         .item-row {
-            padding: 8px;
-            margin: 4px 0;
-            background: #2a2a4e;
-            border-radius: 4px;
+            padding: var(--spacing-sm);
+            margin: var(--spacing-xs) 0;
+            background: var(--bg-item);
+            border-radius: var(--radius-sm);
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            transition: transform 0.15s ease-out;
+            transition: transform var(--transition-fast), background var(--transition-fast);
+            -webkit-user-select: none;
+            user-select: none;
         }
-        .item-row:hover { background: #3a3a5e; }
-        .item-row.selected { border: 2px solid #f1c40f; }
+        .item-row:hover { background: var(--bg-item-hover); }
+        .item-row:active { transform: scale(0.98); }
+        .item-row.selected { border: 2px solid var(--color-rare); }
         .keyboard-selected {
-            outline: 2px solid #3498db !important;
+            outline: 2px solid var(--color-magic) !important;
             outline-offset: 2px;
-            background: #3a3a5e !important;
+            background: var(--bg-item-hover) !important;
         }
-        /* Inventory 2-column layout */
-        .inv-modal-content {
-            width: 95vw;
-            max-width: 800px;
-            max-height: 90vh;
-        }
-        .inv-container {
-            display: flex;
-            gap: 10px;
-            flex: 1;
-            min-height: 200px;
-            overflow: hidden;
-        }
-        .inv-list-panel {
-            flex: 1;
-            min-width: 150px;
-            max-width: 250px;
-            overflow-y: auto;
-            border-right: 1px solid #4a4a6a;
-            padding-right: 10px;
-        }
-        .inv-detail-panel {
-            flex: 2;
-            overflow-y: auto;
-            padding: 10px;
-            background: #1a1a2e;
-            border-radius: 8px;
-        }
-        @media (max-width: 500px) {
-            .inv-container { flex-direction: column; }
-            .inv-list-panel { max-width: none; border-right: none; border-bottom: 1px solid #4a4a6a; padding-bottom: 10px; max-height: 40vh; }
-            .inv-detail-panel { flex: 1; }
-        }
-        /* Landscape hint */
-        @media (orientation: portrait) and (max-height: 600px) {
-            .inv-modal-content::before {
-                content: "横向き推奨";
-                display: block;
-                text-align: center;
-                color: #f1c40f;
-                font-size: 12px;
-                margin-bottom: 5px;
-            }
-        }
+
+        /* Swipe Actions */
         .item-row .swipe-action {
             position: absolute;
             top: 0;
@@ -249,276 +356,43 @@
             font-weight: bold;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.15s;
+            transition: opacity var(--transition-fast);
         }
-        .item-row .swipe-left { right: 0; background: #e74c3c; color: #fff; }
-        .item-row .swipe-right { left: 0; background: #27ae60; color: #fff; }
+        .item-row .swipe-left { right: 0; background: var(--color-danger); color: #fff; }
+        .item-row .swipe-right { left: 0; background: var(--color-success); color: #fff; }
         .item-row.swiping .swipe-action { opacity: 1; }
-        .close-btn {
-            margin-top: 15px;
-            width: 100%;
-            padding: 10px;
-            background: #e74c3c;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            cursor: pointer;
-            font-size: 16px;
+
+        /* ===== Inventory 2-Column Layout ===== */
+        .inv-modal-content {
+            width: 95vw;
+            max-width: 800px;
+            max-height: 90vh;
         }
-        .use-btn {
-            margin-top: 10px;
-            width: 100%;
-            padding: 10px;
-            background: #27ae60;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .equip-btn {
-            margin-top: 10px;
-            width: 100%;
-            padding: 10px;
-            background: #3498db;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .drop-btn {
-            margin-top: 5px;
-            width: 100%;
-            padding: 8px;
-            background: #c0392b;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .forge-btn {
-            background: #8e44ad;
-            border: none;
-            border-radius: 5px;
-            color: #fff;
-            cursor: pointer;
-            text-align: center;
-            min-width: 70px;
-        }
-        .forge-btn:hover { background: #9b59b6; }
-        .forge-btn:disabled { background: #444; color: #666; cursor: not-allowed; }
-        /* Colors */
-        .c-normal { color: #fff; }
-        .c-magic { color: #3498db; }
-        .c-rare { color: #f1c40f; }
-        .c-unique { color: #e67e22; }
-        .c-legend { color: #9b59b6; }
-        .c-set { color: #2ecc71; }
-        .c-magenta { color: #c678dd; }
-        .c-red { color: #e74c3c; }
-        .c-green { color: #2ecc71; }
-        .c-cyan { color: #00bcd4; }
-        .c-gray { color: #888; }
-        .c-flame { color: #3498db; }
-        /* Title screen */
-        #title-screen {
-            text-align: center;
-            padding: 60px 20px;
-        }
-        #title-screen h1 {
-            font-size: 64px;
-            color: #3498db;
-            margin-bottom: 10px;
-            text-shadow: 0 0 20px rgba(52, 152, 219, 0.5), 0 0 40px rgba(52, 152, 219, 0.3);
-            letter-spacing: 8px;
-        }
-        .title-btn {
-            display: block;
-            width: 220px;
-            margin: 15px auto;
-            padding: 18px;
-            font-size: 18px;
-            background: linear-gradient(135deg, #2d4a6a, #1a3a5a);
-            border: 2px solid #3498db;
-            border-radius: 8px;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .title-btn:hover {
-            background: linear-gradient(135deg, #4a6a8a, #2d4a6a);
-            box-shadow: 0 0 15px rgba(52, 152, 219, 0.4);
-            transform: scale(1.02);
-        }
-        .title-btn:disabled { background: #222; color: #555; cursor: not-allowed; border-color: #444; }
-        /* Equipment detail */
-        .equip-detail {
-            background: #2a2a4e;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        .equip-slot {
-            padding: 5px;
-            margin: 3px 0;
-            background: #1a1a2e;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-        }
-        .equip-slot:hover { background: #2a2a3e; }
-        .negative { color: #e74c3c; }
-        /* Status screen */
-        .stat-row {
+        .inv-container {
             display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid #333;
-        }
-        .stat-label { color: #888; }
-        .stat-value { font-weight: bold; }
-        /* Town */
-        #town-screen {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-        .town-title {
-            font-size: 24px;
-            color: #3498db;
-            margin-bottom: 20px;
-        }
-        .npc-dialogue {
-            background: #0f0f23;
-            border: 1px solid #3498db;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 15px 0;
-            text-align: left;
-            white-space: pre-line;
-            font-size: 13px;
-            line-height: 1.6;
-        }
-        .town-menu {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .town-btn {
-            padding: 12px 16px;
-            background: #2d4a6a;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 14px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .town-btn:hover { background: #4a6a8a; }
-        .town-btn:disabled { background: #333; color: #666; display: none; }
-        .town-btn.primary-btn {
-            background: linear-gradient(135deg, #2d6a4f, #1a5a3f);
-            font-size: 16px;
-            padding: 15px 25px;
-            border: 2px solid #3da871;
-        }
-        .town-btn.primary-btn:hover { background: linear-gradient(135deg, #3d8a6f, #2d6a4f); }
-        .town-btn.sub-btn { background: #444; font-size: 12px; padding: 8px 15px; }
-        .town-btn.sub-btn:hover { background: #555; }
-        .town-btn.feature-btn { font-size: 13px; }
-        .soul-bar {
-            background: #0f0f23;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-        }
-        /* Dungeon select */
-        .dungeon-list { list-style: none; }
-        .dungeon-item {
-            padding: 12px;
-            margin: 8px 0;
-            background: #2a2a4e;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .dungeon-item:hover { background: #3a3a5e; }
-        .dungeon-item.locked { opacity: 0.5; cursor: not-allowed; }
-        /* Stash/Shop tabs */
-        .stash-tabs {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        .stash-tab {
+            gap: var(--spacing-md);
             flex: 1;
-            padding: 8px;
-            background: #333;
-            border: none;
-            border-radius: 4px;
-            color: #888;
-            cursor: pointer;
+            min-height: 200px;
+            overflow: hidden;
         }
-        .stash-tab.active {
-            background: #2d4a6a;
-            color: #fff;
+        .inv-list-panel {
+            flex: 1;
+            min-width: 150px;
+            max-width: 250px;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-primary);
+            padding-right: var(--spacing-md);
+            overscroll-behavior: contain;
         }
-        .shop-gold {
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        .shop-price {
-            float: right;
-        }
-        /* Stat allocation */
-        .stat-points-info {
-            text-align: center;
-            font-size: 18px;
-            margin-bottom: 15px;
-        }
-        .stat-alloc-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            margin: 5px 0;
-            background: #2a2a4e;
-            border-radius: 4px;
-        }
-        .alloc-btn {
-            padding: 8px 16px;
-            background: #27ae60;
-            border: none;
-            border-radius: 4px;
-            color: #fff;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .alloc-btn:disabled {
-            background: #333;
-            color: #666;
-            cursor: not-allowed;
-        }
-        /* Return flame item indicator */
-        .return-items {
-            font-size: 11px;
-            color: #3498db;
-        }
-        @media (max-width: 600px) {
-            #map { font-size: 18px; letter-spacing: 1px; }
-            #side-panel { width: 100%; }
-            .ctrl-btn { width: 60px; height: 60px; }
-        }
+        .inv-detail-panel {
+            flex: 2;
+            overflow-y: auto;
     </style>
 </head>
 <body>
     <div id="game-container">
         <!-- Title Screen -->
-        <div id="title-screen">
+        <div id="title-screen" role="main" aria-label="Title Screen">
             <h1 class="c-flame">DUNG</h1>
             <p style="color:#888;font-size:16px;margin-bottom:30px;">~ Forged in Azure Flame ~</p>
             <button class="title-btn" id="btn-continue" disabled>Continue</button>
@@ -526,7 +400,7 @@
         </div>
 
         <!-- Town Screen -->
-        <div id="town-screen">
+        <div id="town-screen" role="main" aria-label="Town">
             <div class="town-title" id="town-name">焚き火</div>
             <div class="soul-bar">
                 <span class="c-flame">魂: <span id="town-souls">0</span></span> |
@@ -549,7 +423,7 @@
         </div>
 
         <!-- Game Screen -->
-        <div id="game-screen" style="display:none;">
+        <div id="game-screen" role="main" aria-label="Dungeon" style="display:none;">
             <div id="header">
                 <span class="stat"><span id="dungeon-name">深淵</span> B<span id="floor">1</span>F</span>
                 <span class="stat">Lv.<span id="level">1</span> <span class="exp-bar"><span class="exp-fill" id="exp-bar"></span></span></span>
@@ -562,8 +436,8 @@
                     <div id="map"></div>
                 </div>
             </div>
-            <div id="messages"></div>
-            <div id="controls">
+            <div id="messages" role="log" aria-live="polite"></div>
+            <nav id="controls" aria-label="Game controls">
                 <div class="ctrl-row">
                     <button class="ctrl-btn" data-dir="up">W</button>
                 </div>
@@ -591,7 +465,7 @@
     </div>
 
     <!-- Inventory Modal (2-column horizontal layout) -->
-    <div class="modal" id="inventory-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="inventory-modal">
         <div class="modal-content inv-modal-content">
             <div class="modal-title">INVENTORY (<span id="inv-count">0</span>/20)</div>
             <div class="inv-container">
@@ -611,7 +485,7 @@
     </div>
 
     <!-- Status Modal -->
-    <div class="modal" id="status-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="status-modal">
         <div class="modal-content">
             <div class="modal-title">CHARACTER STATUS</div>
             <div id="status-content"></div>
@@ -621,7 +495,7 @@
     </div>
 
     <!-- Equipment Select Modal -->
-    <div class="modal" id="equip-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="equip-modal">
         <div class="modal-content">
             <div class="modal-title" id="equip-modal-title">Select Equipment</div>
             <ul class="item-list" id="equip-select-list"></ul>
@@ -630,7 +504,7 @@
     </div>
 
     <!-- Dungeon Select Modal -->
-    <div class="modal" id="dungeon-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="dungeon-modal">
         <div class="modal-content">
             <div class="modal-title">ダンジョン選択</div>
             <ul class="dungeon-list" id="dungeon-list"></ul>
@@ -639,7 +513,7 @@
     </div>
 
     <!-- Offer Souls Modal -->
-    <div class="modal" id="offer-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="offer-modal">
         <div class="modal-content">
             <div class="modal-title">魂を捧げる</div>
             <div id="offer-content"></div>
@@ -648,7 +522,7 @@
     </div>
 
     <!-- Recovery Modal -->
-    <div class="modal" id="recovery-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="recovery-modal">
         <div class="modal-content">
             <div class="modal-title">装備回収</div>
             <div id="recovery-content"></div>
@@ -657,7 +531,7 @@
     </div>
 
     <!-- Stash Modal -->
-    <div class="modal" id="stash-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="stash-modal">
         <div class="modal-content" style="min-width:350px;">
             <div class="modal-title">保管箱 (<span id="stash-count">0</span>/100)</div>
             <div class="stash-tabs">
@@ -670,7 +544,7 @@
     </div>
 
     <!-- Shop Modal -->
-    <div class="modal" id="shop-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="shop-modal">
         <div class="modal-content" style="min-width:380px;">
             <div class="modal-title">炎の商人</div>
             <div class="shop-gold">所持金: <span class="c-rare" id="shop-gold">0</span>G</div>
@@ -684,7 +558,7 @@
     </div>
 
     <!-- Forge Modal -->
-    <div class="modal" id="forge-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="forge-modal">
         <div class="modal-content" style="max-width:600px;">
             <div class="modal-title">鍛冶場 <span class="c-flame" id="forge-souls">0</span>魂</div>
             <div style="display:flex; gap:10px; margin-bottom:10px;">
@@ -704,7 +578,7 @@
     </div>
 
     <!-- Altar Modal -->
-    <div class="modal" id="altar-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="altar-modal">
         <div class="modal-content" style="text-align:center;">
             <div class="modal-title">祭壇</div>
             <p class="c-gray" style="margin:20px 0;">祭壇は沈黙している...<br>（将来のアップデートで実装予定）</p>
@@ -713,7 +587,7 @@
     </div>
 
     <!-- Stat Allocation Modal -->
-    <div class="modal" id="stat-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="stat-modal">
         <div class="modal-content">
             <div class="modal-title">ステータス振り分け</div>
             <div class="stat-points-info">残りポイント: <span class="c-green" id="stat-points-remain">0</span></div>
@@ -737,7 +611,7 @@
     </div>
 
     <!-- Auto Explore Modal -->
-    <div class="modal" id="auto-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="auto-modal">
         <div class="modal-content">
             <div class="modal-title">自動探索設定</div>
             <div id="auto-settings" style="margin:10px 0; text-align:left;">
@@ -787,7 +661,7 @@
     </div>
 
     <!-- Settings Modal (accessible from dungeon) -->
-    <div class="modal" id="settings-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="settings-modal">
         <div class="modal-content">
             <div class="modal-title">探索設定</div>
             <div style="margin:10px 0; text-align:left;">
@@ -816,7 +690,7 @@
     </div>
 
     <!-- Event Modal -->
-    <div class="modal" id="event-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="event-modal">
         <div class="modal-content" style="text-align:center;">
             <div class="modal-title" id="event-title">イベント</div>
             <p id="event-desc" style="margin:15px 0;"></p>
@@ -829,7 +703,7 @@
     </div>
 
     <!-- Bonfire Menu Modal -->
-    <div class="modal" id="bonfire-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="bonfire-modal">
         <div class="modal-content">
             <div class="modal-title c-flame">焚き火</div>
             <div id="bonfire-info" style="margin:10px 0; text-align:left; line-height:1.8;"></div>
@@ -842,7 +716,7 @@
     </div>
 
     <!-- Game Over Modal -->
-    <div class="modal" id="gameover-modal">
+    <div class="modal" role="dialog" aria-modal="true" id="gameover-modal">
         <div class="modal-content" style="text-align:center;">
             <div class="modal-title" id="gameover-title">GAME OVER</div>
             <p id="gameover-msg"></p>
