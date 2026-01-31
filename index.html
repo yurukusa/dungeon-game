@@ -1465,7 +1465,8 @@ const UNIQUE_EFFECTS = {
     BONUS_EXP: 'bonusExp',                      // +% exp (already in stats)
     HP_REGEN_PERCENT: 'hpRegenPercent',         // % maxHP regen per floor
     ALL_DAMAGE_PERCENT: 'allDamagePercent',     // +% all damage
-    CRIT_LIGHTNING_BONUS: 'critLightningBonus'  // Extra lightning damage on crit
+    CRIT_LIGHTNING_BONUS: 'critLightningBonus', // Extra lightning damage on crit
+    LIFE_LEECH: 'lifeLeech'                     // % physical damage as HP recovery
 };
 
 const UNIQUES = [
@@ -3366,6 +3367,12 @@ function checkDropCondition(conditions, floor, dungeonId, isBoss = false, enemyN
             continue;
         }
 
+        // 深層モード条件
+        if (cond === 'deep_mode') {
+            if (game && game.isDeepMode && game.isDeepMode()) return true;
+            continue;
+        }
+
         // 壁モンスター条件（enemyNameが指定されている場合）
         if (enemyName && WALL_MONSTER_CONDITIONS[enemyName]) {
             const monsterCond = WALL_MONSTER_CONDITIONS[enemyName];
@@ -4267,7 +4274,7 @@ function renderTown() {
     // 動的に生成されたボタンにハンドラを設定
     const btn = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
     btn('btn-offer-souls', () => showOfferSouls());
-    btn('btn-recover', () => document.getElementById('recover-modal').classList.add('active'));
+    btn('btn-recover', () => document.getElementById('recovery-modal').classList.add('active'));
     btn('btn-stat-alloc', () => showStatAlloc());
     btn('btn-stash', () => showStash());
     btn('btn-auto-equip', () => autoEquip());
