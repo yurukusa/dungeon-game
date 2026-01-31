@@ -747,7 +747,7 @@
                     <button class="action-btn" id="btn-save" title="ゲームをセーブ">Save</button>
                     <button class="action-btn" id="btn-settings" title="設定画面を開く">設定</button>
                 </div>
-            </div>
+            </nav>
             <div id="side-panel">
                 <div style="color:#f1c40f;margin-bottom:10px;">[ EQUIPMENT ]</div>
                 <div id="equipment-list"></div>
@@ -1568,7 +1568,7 @@ const UNIQUES = [
     {name:'吹雪のアミュレット',type:'amulet',tier:2,stats:{coldDmg:18,coldRes:30,int:6},neg:{fireRes:-20},desc:'首にかけると風が吹く。',
      effects:{onHitFreeze:10,soulFind:15},dropCondition:['frozen_10f']},
     {name:'氷壁の盾',type:'shield',tier:1,stats:{armor:35,block:25,coldRes:25},neg:{fireRes:-30},reqStr:14,desc:'腕まで冷える。……手袋があってよかった。',
-     effects:{freezeOnBlock:30},dropCondition:['frozen_40f']},
+     effects:{blockHeal:30},dropCondition:['frozen_40f']},
     // ========== 氷の追加ユニーク（Python版から移植） ==========
     {name:'氷牙の剣',type:'sword',tier:1,stats:{dmgMin:16,dmgMax:28,coldDmg:25,crit:8},neg:{fireRes:-20},reqStr:12,desc:'凍てつく牙が刻まれた剣。',
      effects:{onHitFreeze:18,coldPen:12},dropCondition:['frozen_30f']},
@@ -1593,7 +1593,7 @@ const UNIQUES = [
     {name:'凍てつくベルト',type:'belt',tier:1,stats:{coldDmg:15,coldRes:35,int:6},neg:{fireRes:-25},desc:'腰から凍える。……足は動く。',
      effects:{physToCold:20},dropCondition:['frozen_10f']},
     {name:'凍傷の手袋',type:'gloves',tier:1,stats:{armor:12,critDmg:50,coldDmg:10},neg:{attackSpeed:-10},reqDex:10,desc:'指の感覚がない。……軽くて、いい。',
-     effects:{frozenCritBonus:20},dropCondition:['frozen_10f']},
+     effects:{critLightningBonus:20},dropCondition:['frozen_10f']},
     {name:'影縫いの手袋',type:'gloves',tier:1,stats:{armor:8,crit:12,darkDmg:12},neg:{attackSpeed:-20},reqDex:10,desc:'影を掴める。不思議だ。',
      effects:{rootOnCrit:true},dropCondition:['frozen_60f']},
     // ========== 深淵・混沌の高階層ユニーク（Python版から移植） ==========
@@ -1606,7 +1606,7 @@ const UNIQUES = [
     {name:'混沌の剣',type:'sword',tier:0,stats:{dmgMin:12,dmgMax:35,fireDmg:10,coldDmg:10,ltnDmg:10,darkDmg:10},neg:{accuracy:-15},reqStr:16,desc:'何が起きるかは、誰にも分からない。',
      effects:{onHitBurn:5,onHitFreeze:10,onHitShock:5},dropCondition:['frozen_90f']},
     {name:'因果の指輪',type:'ring',tier:0,stats:{dmgMin:15,dmgMax:30,darkDmg:20},neg:{hp:-30},desc:'与えた分だけ、返ってくる。',
-     effects:{allDamagePercent:50,reflect:10,karmaDamage:15},dropCondition:['frozen_90f']}
+     effects:{allDamagePercent:50,reflect:25},dropCondition:['frozen_90f']}
 ];
 
 // 壁モンスター条件（Python版から移植）- 特定の強敵を倒した時のみユニークがドロップ
@@ -3071,6 +3071,20 @@ class Player {
     equip(eq, slot) {
         const type = EQUIP_TYPES[eq.type];
         const unequipped = [];
+
+        // 矢筒は弓装備時のみ許可
+        if (eq.type === 'quiver') {
+            const mainHand = this.equipment.mainHand;
+            if (!mainHand || mainHand.type !== 'bow') {
+                return unequipped; // 弓がないと矢筒は装備不可
+            }
+        }
+
+        // 弓以外の武器を装備する場合、矢筒を外す
+        if (slot === 'mainHand' && eq.type !== 'bow' && this.equipment.offHand && this.equipment.offHand.type === 'quiver') {
+            unequipped.push(this.equipment.offHand);
+            this.equipment.offHand = null;
+        }
 
         if (type.twoHand) {
             if (this.equipment.mainHand) unequipped.push(this.equipment.mainHand);
