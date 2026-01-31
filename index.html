@@ -383,6 +383,64 @@
         .inv-detail-panel {
             flex: 2;
             overflow-y: auto;
+        }
+
+        /* ===== Color Classes ===== */
+        .c-red { color: #e74c3c; }
+        .c-green { color: #2ecc71; }
+        .c-yellow { color: #f1c40f; }
+        .c-blue { color: #3498db; }
+        .c-cyan { color: #00bcd4; }
+        .c-magenta { color: #e91e63; }
+        .c-gray { color: #888; }
+        .c-orange { color: #e67e22; }
+        .c-white { color: #fff; }
+
+        /* Rarity Colors */
+        .c-normal { color: #fff; }
+        .c-magic { color: #3498db; }
+        .c-rare { color: #f1c40f; }
+        .c-unique { color: #e67e22; }
+        .c-legend { color: #9b59b6; }
+        .c-set { color: #2ecc71; }
+        .c-flame { color: #3498db; }
+
+        /* Title Screen */
+        #title-screen {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        #title-screen h1 {
+            font-size: 64px;
+            color: #3498db;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(52, 152, 219, 0.5), 0 0 40px rgba(52, 152, 219, 0.3);
+            letter-spacing: 8px;
+        }
+        .title-btn {
+            display: block;
+            width: 220px;
+            margin: 15px auto;
+            padding: 18px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #2d4a6a, #1a3a5a);
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .title-btn:hover {
+            background: linear-gradient(135deg, #4a6a8a, #2d4a6a);
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.4);
+            transform: scale(1.02);
+        }
+        .title-btn:disabled {
+            background: #222;
+            color: #555;
+            cursor: not-allowed;
+            border-color: #444;
+        }
     </style>
 </head>
 <body>
