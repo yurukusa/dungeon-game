@@ -8,10 +8,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>DUNG: Azure Flame</title>
     <style>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>DUNG: Azure Flame</title>
-    <style>
         /* ===== CSS Variables ===== */
         :root {
             /* Colors */
@@ -650,8 +646,32 @@
                         <option value="50">50%以下</option>
                     </select>
                 </div>
+                <div class="stat-alloc-row">
+                    <span>ポーション上限:</span>
+                    <select id="auto-max-potions" style="background:#1a1a2e;color:#fff;border:1px solid #4a4a6a;padding:5px;">
+                        <option value="0">0個</option>
+                        <option value="3">3個</option>
+                        <option value="5" selected>5個</option>
+                        <option value="10">10個</option>
+                        <option value="99">無制限</option>
+                    </select>
+                </div>
+                <div class="stat-alloc-row">
+                    <span>低スコア優先:</span>
+                    <select id="auto-low-score" style="background:#1a1a2e;color:#fff;border:1px solid #4a4a6a;padding:5px;">
+                        <option value="1" selected>ON</option>
+                        <option value="0">OFF</option>
+                    </select>
+                </div>
+                <div class="stat-alloc-row">
+                    <span>自動装備:</span>
+                    <select id="auto-equip-enabled" style="background:#1a1a2e;color:#fff;border:1px solid #4a4a6a;padding:5px;">
+                        <option value="1" selected>ON</option>
+                        <option value="0">OFF</option>
+                    </select>
+                </div>
             </div>
-            <div style="color:#888;font-size:11px;margin:10px 0;">即ソウル化: 未装着分を変換 / 倉庫保管: 帰還時保存</div>
+            <div style="color:#888;font-size:11px;margin:10px 0;">即ソウル化: 未装着分を変換 / 倉庫保管: 帰還時保存<br>自動装備: 拾った装備がより良ければ自動装着</div>
             <div id="auto-stats" style="margin:10px 0;"></div>
             <div id="auto-status" class="c-cyan" style="margin:10px 0;"></div>
             <button class="use-btn" id="btn-start-auto">探索開始</button>
@@ -750,8 +770,8 @@ const TOWN_LEVELS = {
     1: { name: '小さな灯り', soulReq: 50, features: ['soulConvert'] },
     2: { name: '朽ちた祠', soulReq: 150, features: ['soulConvert', 'stash', 'autoEquip'] },
     3: { name: '忘れられた広場', soulReq: 400, features: ['soulConvert', 'stash', 'autoEquip', 'shop', 'autoExplore'] },
-    4: { name: '霧の集落', soulReq: 800, features: ['soulConvert', 'stash', 'autoEquip', 'shop', 'autoExplore', 'forge', 'soulReturn'] },
-    5: { name: '目覚めし町', soulReq: 1500, features: ['soulConvert', 'stash', 'autoEquip', 'shop', 'autoExplore', 'forge', 'soulReturn', 'altar'] }
+    4: { name: '霧の集落', soulReq: 3000, features: ['soulConvert', 'stash', 'autoEquip', 'shop', 'autoExplore', 'forge', 'soulReturn'] },
+    5: { name: '目覚めし町', soulReq: 30000, features: ['soulConvert', 'stash', 'autoEquip', 'shop', 'autoExplore', 'forge', 'soulReturn', 'altar'] }
 };
 
 // NPC Dialogue
@@ -1153,24 +1173,24 @@ const UNIQUE_EFFECTS = {
 };
 
 const UNIQUES = [
-    // Tier 0: Strongest effects + heavy negatives (1F~)
+    // Tier 0: Strongest effects + heavy negatives (ボス・祭壇限定)
     {name:'滅びの大剣',type:'greatsword',tier:0,stats:{dmgMin:45,dmgMax:80,crit:15,darkDmg:30},neg:{hp:-50,fireRes:-30},reqStr:20,desc:'振るう者の命をも削る破壊の剣',
-     effects:{damageWhenLowHp:80,cull:10}}, // +80% dmg at low HP, cull <10%
+     effects:{damageWhenLowHp:80,cull:10},dropCondition:['frozen_boss','altar']},
     {name:'不死王の鎧',type:'body',tier:0,stats:{armor:80,hp:80,darkRes:50,hpRegen:8},neg:{fireRes:-50,ltnRes:-40,eva:-20},reqStr:18,desc:'かつての不死王が纏った鎧',
-     effects:{cannotBeCrit:true,damageToSoul:20}}, // Can't be crit, 20% dmg to soul
+     effects:{cannotBeCrit:true,damageToSoul:20},dropCondition:['frozen_boss','deep_mode']},
     {name:'虚無の指輪',type:'ring',tier:0,stats:{dmgMin:10,dmgMax:20,darkDmg:25,crit:20},neg:{hp:-40,coldRes:-30},desc:'全てを虚無に還す力を宿す',
-     effects:{onKillSoul:3,soulFind:50}}, // +3 soul on kill, +50% soul gain
+     effects:{onKillSoul:3,soulFind:50},dropCondition:['frozen_boss','altar']},
     {name:'狂乱の仮面',type:'helmet',tier:0,stats:{str:25,dex:25,critDmg:50},neg:{armor:-30,hp:-30,block:-20},desc:'装備者を狂気に陥れる仮面',
-     effects:{onKillRage:50,extraHit:15}}, // +50% dmg buff on kill, 15% double attack
-    // Tier 1: Strong effects + moderate negatives (1F~)
+     effects:{onKillRage:50,extraHit:15},dropCondition:['frozen_boss','deep_mode']},
+    // Tier 1: Strong effects + moderate negatives (ボス・高階層限定)
     {name:'業火の剣',type:'sword',tier:1,stats:{dmgMin:15,dmgMax:28,fireDmg:35},neg:{coldRes:-30},reqStr:12,desc:'燃え盛る炎の剣',
-     effects:{physToFire:30,onHitBurn:8}}, // 30% phys->fire, burn 8/turn
+     effects:{physToFire:30,onHitBurn:8},dropCondition:['inferno_boss','frozen_50f','altar']},
     {name:'氷結の杖',type:'staff',tier:1,stats:{dmgMin:10,dmgMax:22,coldDmg:40,int:12},neg:{fireRes:-35},reqInt:14,desc:'全てを凍らせる極寒の杖',
-     effects:{physToCold:30,onHitFreeze:25}}, // 30% phys->cold, 25% freeze
+     effects:{physToCold:30,onHitFreeze:25},dropCondition:['inferno_boss','frozen_50f','altar']},
     {name:'狂戦士の兜',type:'helmet',tier:1,stats:{str:18,dmgMin:6,dmgMax:12,critDmg:35},neg:{armor:-15,eva:-15},reqStr:12,desc:'理性を捨て力を得る兜',
-     effects:{damageWhenLowHp:40,lowLifeDefense:30}}, // +40% dmg, +30 armor at low HP
+     effects:{damageWhenLowHp:40,lowLifeDefense:30},dropCondition:['inferno_boss','frozen_50f','deep_mode']},
     {name:'呪われた短剣',type:'dagger',tier:1,stats:{dmgMin:10,dmgMax:20,crit:25,darkDmg:15},neg:{hp:-25},reqDex:10,desc:'命を削る代わりに強力な一撃',
-     effects:{cull:15,lifeLeech:5}}, // Cull <15%, 5% life leech (overrides stats)
+     effects:{cull:15,lifeLeech:5},dropCondition:['inferno_boss','frozen_50f','deep_mode']},
     // Tier 2: Medium effects + light negatives (5F~)
     {name:'竜殺しの弓',type:'bow',tier:2,stats:{dmgMin:20,dmgMax:40,crit:15,fireDmg:20},neg:{armor:-10},reqDex:15,desc:'伝説の竜を屠った弓',
      effects:{firePen:20,extraHit:10}}, // 20% fire pen, 10% double attack
@@ -1220,74 +1240,107 @@ const UNIQUES = [
      effects:{}},
     // ========== ダンジョンテーマ別（深淵・闇） ==========
     {name:'深淵喰らい',type:'greatsword',tier:0,stats:{dmgMin:40,dmgMax:70,darkDmg:35},neg:{hp:-30},reqStr:22,desc:'数えていたんだ。……最初のうちは。',
-     effects:{damageWhenLowHp:100,onKillSoul:5},dropCondition:'abyss'},
+     effects:{damageWhenLowHp:100,onKillSoul:5},dropCondition:['abyss_10f']},
     {name:'虚無の心臓',type:'body',tier:0,stats:{armor:60,hp:50,darkRes:40},neg:{fireRes:-50},reqStr:18,desc:'脈を打っている。……何の音だろう。',
-     effects:{damageToSoul:30,hpRegenPercent:2},dropCondition:'abyss'},
+     effects:{damageToSoul:30,hpRegenPercent:2},dropCondition:['abyss_boss','altar']},
     {name:'冥府の短剣',type:'dagger',tier:1,stats:{dmgMin:12,dmgMax:24,crit:20,darkDmg:15},neg:{},reqDex:12,desc:'静かだ……。',
-     effects:{cull:12},dropCondition:'abyss'},
+     effects:{cull:12},dropCondition:['abyss_10f']},
     {name:'奈落の指輪',type:'ring',tier:1,stats:{darkDmg:20,int:8},neg:{},desc:'暗いほうが、よく見える。……不思議だな。',
-     effects:{lifeLeech:4,onKillSoul:2},dropCondition:'abyss'},
+     effects:{lifeLeech:4,onKillSoul:2},dropCondition:['abyss_10f']},
     // ========== ダンジョンテーマ別（灼熱・火） ==========
     {name:'炎帝の大剣',type:'greatsword',tier:0,stats:{dmgMin:25,dmgMax:45,fireDmg:50},neg:{dmgMin:-10,dmgMax:-15},reqStr:24,desc:'柄だけが焦げていない。',
-     effects:{physToFire:50,onHitBurn:20},dropCondition:'inferno'},
+     effects:{physToFire:50,onHitBurn:20},dropCondition:['inferno_boss','altar']},
     {name:'業火の心臓',type:'body',tier:0,stats:{armor:55,hp:40,fireRes:50},neg:{coldRes:-50},reqStr:16,desc:'熱い。……痛くはない。',
-     effects:{reflect:15,hpRegenPercent:3},dropCondition:'inferno'},
+     effects:{reflect:15,hpRegenPercent:3},dropCondition:['inferno_40f']},
     {name:'煉獄の剣',type:'sword',tier:1,stats:{dmgMin:14,dmgMax:26,fireDmg:20},neg:{},reqStr:12,desc:'触れたものが燃える。それだけのことだ。',
-     effects:{onHitBurn:15,firePen:15},dropCondition:'inferno'},
+     effects:{onHitBurn:15,firePen:15},dropCondition:['inferno_20f']},
     {name:'焦土の盾',type:'shield',tier:1,stats:{armor:30,block:18,fireRes:40},neg:{coldRes:-30},reqStr:14,desc:'守るつもりだった。……焼けてしまったが。',
-     effects:{blockHeal:15,reflect:10},dropCondition:'inferno'},
+     effects:{blockHeal:15,reflect:10},dropCondition:['inferno_30f']},
     {name:'溶岩歩き',type:'boots',tier:2,stats:{armor:15,fireRes:50,eva:10},neg:{coldRes:-40},desc:'足跡が残る。消えるまで、しばらくかかる。',
-     effects:{hpRegenPercent:2},dropCondition:'inferno'},
+     effects:{hpRegenPercent:2},dropCondition:['inferno_10f']},
     {name:'炎のベルト',type:'belt',tier:2,stats:{armor:12,fireDmg:15,str:6},neg:{},desc:'締めると温かい。……熱いか。',
-     effects:{physToFire:30},dropCondition:'inferno'},
+     effects:{physToFire:30},dropCondition:['inferno_10f']},
     // ========== ダンジョンテーマ別（凍てつく・氷） ==========
     {name:'永久凍土の大剣',type:'greatsword',tier:0,stats:{dmgMin:35,dmgMax:60,coldDmg:45},neg:{},reqStr:22,desc:'重い。……冷たくはない。',
-     effects:{physToCold:40,onHitFreeze:35},dropCondition:'frozen'},
+     effects:{physToCold:40,onHitFreeze:35},dropCondition:['frozen_boss','altar']},
     {name:'氷獄の心臓',type:'body',tier:0,stats:{armor:65,hp:45,coldRes:70},neg:{fireRes:-50},reqStr:18,desc:'自分が凍っているのか、世界が凍っているのか。',
-     effects:{reflect:20,cannotBeCrit:true},dropCondition:'frozen'},
+     effects:{reflect:20,cannotBeCrit:true},dropCondition:['frozen_40f']},
     {name:'霜の杖',type:'staff',tier:1,stats:{dmgMin:12,dmgMax:25,coldDmg:35,int:10},neg:{fireRes:-25},reqInt:12,desc:'触れたものが白くなる。',
-     effects:{coldPen:20,onHitFreeze:20},dropCondition:'frozen'},
+     effects:{coldPen:20,onHitFreeze:20},dropCondition:['frozen_20f']},
     {name:'氷結の手袋',type:'gloves',tier:2,stats:{int:8,coldDmg:12,coldRes:25},neg:{},reqInt:8,desc:'指先が冷たい。……感覚がない。',
-     effects:{coldPen:10},dropCondition:'frozen'},
+     effects:{coldPen:10},dropCondition:['frozen_10f']},
     {name:'吹雪のアミュレット',type:'amulet',tier:2,stats:{coldDmg:18,coldRes:30,int:6},neg:{fireRes:-20},desc:'首にかけると風が吹く。',
-     effects:{onHitFreeze:10,soulFind:15},dropCondition:'frozen'},
-    {name:'氷壁の盾',type:'shield',tier:2,stats:{armor:25,block:22,coldRes:40},neg:{},reqStr:10,desc:'どんな炎も消える。',
-     effects:{blockHeal:12},dropCondition:'frozen'},
-    // ========== 雷テーマ（灼熱/凍てつくドロップ） ==========
+     effects:{onHitFreeze:10,soulFind:15},dropCondition:['frozen_10f']},
+    {name:'氷壁の盾',type:'shield',tier:1,stats:{armor:35,block:25,coldRes:25},neg:{fireRes:-30},reqStr:14,desc:'腕まで冷える。……手袋があってよかった。',
+     effects:{freezeOnBlock:30},dropCondition:['frozen_40f']},
+    // ========== 氷の追加ユニーク（Python版から移植） ==========
+    {name:'氷牙の剣',type:'sword',tier:1,stats:{dmgMin:16,dmgMax:28,coldDmg:25,crit:8},neg:{fireRes:-20},reqStr:12,desc:'凍てつく牙が刻まれた剣。',
+     effects:{onHitFreeze:18,coldPen:12},dropCondition:['frozen_30f']},
+    // ========== 雷テーマ（高階層限定） ==========
     {name:'雷帝の大剣',type:'greatsword',tier:0,stats:{dmgMin:30,dmgMax:55,ltnDmg:60},neg:{coldRes:-40},reqStr:24,desc:'空が裂けた。……いつの話だったか。',
-     effects:{chainLightning:2,physToLightning:40},dropCondition:'inferno'},
+     effects:{chainLightning:2,physToLightning:40},dropCondition:['frozen_70f']},
     {name:'雷神の心臓',type:'body',tier:0,stats:{armor:55,hp:35,ltnRes:60,ltnDmg:25},neg:{fireRes:-30},reqStr:18,desc:'脈動している。……雷鳴のように。',
-     effects:{attackSpeed:1,onHitShock:15},dropCondition:'inferno'},
+     effects:{attackSpeed:1,onHitShock:15},dropCondition:['frozen_70f']},
     {name:'轟雷の剣',type:'sword',tier:1,stats:{dmgMin:14,dmgMax:26,ltnDmg:30,crit:12},neg:{},reqStr:14,desc:'抜くと鳴る。……何の音だろう。',
-     effects:{critLightningBonus:50,lightningPen:15},dropCondition:'inferno'},
+     effects:{critLightningBonus:50,lightningPen:15},dropCondition:['frozen_50f']},
     {name:'雷鳴の盾',type:'shield',tier:1,stats:{armor:28,block:20,ltnRes:45},neg:{coldRes:-25},reqStr:14,desc:'守ると轟く。',
-     effects:{shockOnBlock:true,reflect:8},dropCondition:'inferno'},
+     effects:{shockOnBlock:true,reflect:8},dropCondition:['frozen_60f']},
     {name:'雷光の手袋',type:'gloves',tier:2,stats:{dex:10,ltnDmg:15,accuracy:12},neg:{},reqDex:10,desc:'触れる前に、届く。',
-     effects:{attackSpeed:1,lightningPen:10},dropCondition:'inferno'},
+     effects:{attackSpeed:1,lightningPen:10},dropCondition:['frozen_50f']},
     {name:'雷のベルト',type:'belt',tier:2,stats:{str:8,ltnDmg:12,ltnRes:20},neg:{},desc:'腰が痺れる。……慣れた。',
-     effects:{physToLightning:25},dropCondition:'inferno'},
+     effects:{physToLightning:25},dropCondition:['frozen_60f']},
     // ========== その他の特殊ユニーク ==========
     {name:'一度の奇跡',type:'amulet',tier:0,stats:{hp:30,fireRes:20,coldRes:20,ltnRes:20,darkRes:20},neg:{dmgMin:-5,dmgMax:-10},desc:'最後に一度だけ、奇跡は起きる。',
-     effects:{cheatDeath:true}},
-    {name:'因果の指輪',type:'ring',tier:0,stats:{dmgMin:15,dmgMax:30,darkDmg:20},neg:{hp:-30},desc:'与えた分だけ、返ってくる。',
-     effects:{allDamagePercent:50,reflect:10}},
-    {name:'混沌の剣',type:'sword',tier:0,stats:{dmgMin:12,dmgMax:35,fireDmg:10,coldDmg:10,ltnDmg:10,darkDmg:10},neg:{accuracy:-15},reqStr:16,desc:'何が起きるかは、誰にも分からない。',
-     effects:{onHitBurn:5,onHitFreeze:10,onHitShock:5}},
+     effects:{cheatDeath:true},dropCondition:['none']},
     {name:'重い財布',type:'belt',tier:1,stats:{goldFind:50,armor:15},neg:{eva:-10},desc:'重いほど、安心する。',
-     effects:{goldToArmor:true}},
+     effects:{goldToArmor:true},dropCondition:['none']},
     {name:'凍てつくベルト',type:'belt',tier:1,stats:{coldDmg:15,coldRes:35,int:6},neg:{fireRes:-25},desc:'腰から凍える。……足は動く。',
-     effects:{physToCold:20},dropCondition:'frozen'},
-    {name:'凍傷の手袋',type:'gloves',tier:1,stats:{int:12,coldDmg:18,coldRes:20},neg:{fireRes:-20},reqInt:10,desc:'指が青い。……感覚はある。',
-     effects:{onHitFreeze:15,coldPen:12},dropCondition:'frozen'},
+     effects:{physToCold:20},dropCondition:['frozen_10f']},
+    {name:'凍傷の手袋',type:'gloves',tier:1,stats:{armor:12,critDmg:50,coldDmg:10},neg:{attackSpeed:-10},reqDex:10,desc:'指の感覚がない。……軽くて、いい。',
+     effects:{frozenCritBonus:20},dropCondition:['frozen_10f']},
+    {name:'影縫いの手袋',type:'gloves',tier:1,stats:{armor:8,crit:12,darkDmg:12},neg:{attackSpeed:-20},reqDex:10,desc:'影を掴める。不思議だ。',
+     effects:{rootOnCrit:true},dropCondition:['frozen_60f']},
+    // ========== 深淵・混沌の高階層ユニーク（Python版から移植） ==========
     {name:'奈落歩き',type:'boots',tier:1,stats:{eva:18,darkDmg:15,darkRes:30},neg:{hp:-20},desc:'足跡が消える。……どこへ行ったのか。',
-     effects:{allDamagePercent:20},dropCondition:'abyss'},
-    {name:'影縫いの手袋',type:'gloves',tier:1,stats:{dex:14,crit:15,darkDmg:12},neg:{armor:-10},reqDex:12,desc:'縫い止める。……動かない。',
-     effects:{rootOnCrit:true},dropCondition:'abyss'},
+     effects:{allDamagePercent:20},dropCondition:['frozen_80f']},
     {name:'深淵の首飾り',type:'amulet',tier:0,stats:{darkDmg:30,darkRes:40,crit:10},neg:{hp:-35},desc:'覗いた。……覗き返された。',
-     effects:{allDamagePercent:35,cull:8},dropCondition:'abyss'},
+     effects:{allDamagePercent:35,cull:8},dropCondition:['frozen_80f']},
     {name:'虚ろの盾',type:'shield',tier:1,stats:{armor:30,block:22,darkRes:35},neg:{fireRes:-20},reqStr:12,desc:'何も映らない。',
-     effects:{darkReflect:15,blockHeal:8},dropCondition:'abyss'}
+     effects:{darkReflect:15,blockHeal:8},dropCondition:['frozen_80f']},
+    {name:'混沌の剣',type:'sword',tier:0,stats:{dmgMin:12,dmgMax:35,fireDmg:10,coldDmg:10,ltnDmg:10,darkDmg:10},neg:{accuracy:-15},reqStr:16,desc:'何が起きるかは、誰にも分からない。',
+     effects:{onHitBurn:5,onHitFreeze:10,onHitShock:5},dropCondition:['frozen_90f']},
+    {name:'因果の指輪',type:'ring',tier:0,stats:{dmgMin:15,dmgMax:30,darkDmg:20},neg:{hp:-30},desc:'与えた分だけ、返ってくる。',
+     effects:{allDamagePercent:50,reflect:10,karmaDamage:15},dropCondition:['frozen_90f']}
 ];
+
+// 壁モンスター条件（Python版から移植）- 特定の強敵を倒した時のみユニークがドロップ
+const WALL_MONSTER_CONDITIONS = {
+    "ドラゴン": "abyss_10f",
+    "深淵の主": "abyss_boss",
+    "永劫の番人": "abyss_boss",
+    "オーク（火）": "inferno_10f",
+    "炎の魔術師": "inferno_20f",
+    "炎の精霊": "inferno_30f",
+    "ファイアデーモン": "inferno_40f",
+    "灼熱の暴君": "inferno_boss",
+    "オーク（氷）": "frozen_10f",
+    "墓守": "frozen_20f",
+    "アイスウルフ": "frozen_30f",
+    "フロストジャイアント": "frozen_40f",
+    "リッチ": "frozen_50f",
+    "雷竜": "frozen_50f",
+    "シャドウデーモン": "frozen_60f",
+    "嵐の巨人": "frozen_60f",
+    "デスブリンガー": "frozen_70f",
+    "サンダードレイク": "frozen_70f",
+    "炎竜": "frozen_80f",
+    "虚無竜": "frozen_80f",
+    "氷嵐の王": "frozen_80f",
+    "虚無の使徒": "frozen_80f",
+    "混沌の化身": "frozen_90f",
+    "深淵の王": "frozen_90f",
+    "凍獄の覇王": "frozen_boss"
+};
 const UNIQUE_TIER_FLOORS = {0:1,1:1,2:5,3:10,4:20,5:1,6:1};
 
 // セット効果定義
@@ -2016,10 +2069,21 @@ class Game {
             // Equipment drop
             if (enemy.isBoss) {
                 // ボスドロップ: 6modレア or Unique/Legend/Set 確定
-                const droppedEq = generateBossDrop(this.floor, this.currentDungeon);
+                const droppedEq = generateBossDrop(this.floor, this.currentDungeon, enemy.name);
                 this.dungeon.items.push({type:'equip', x: enemy.x, y: enemy.y, equip: droppedEq});
                 this.msg(`${RARITY[droppedEq.rarity].name}装備ドロップ!`, RARITY[droppedEq.rarity].cls);
             } else {
+                // 壁モンスター（強敵）限定ユニークドロップ判定
+                if (WALL_MONSTER_CONDITIONS[enemy.name]) {
+                    // 壁モンスターは25%の確率でユニークをドロップ
+                    if (Math.random() < 0.25) {
+                        const unique = generateUnique(this.floor, this.currentDungeon, false, enemy.name);
+                        if (unique) {
+                            this.dungeon.items.push({type:'equip', x: enemy.x, y: enemy.y, equip: unique});
+                            this.msg(`限定ユニーク「${unique.name}」ドロップ!`, 'c-unique');
+                        }
+                    }
+                }
                 // 通常敵: 10% base + exp bonus up to 20%
                 const baseDropChance = 0.10;
                 const expDropBonus = Math.min(0.20, enemy.exp / 500);
@@ -2060,16 +2124,54 @@ class Game {
         this.liberationEnd = true;
         this.gameOver = true;
         localStorage.removeItem('dungeonSave');
-        document.getElementById('gameover-title').textContent = '★★★ 解放END ★★★';
+
+        const clearCount = this.incrementClearCount();
+        const clearDate = new Date().toLocaleString('ja-JP');
+
+        document.getElementById('gameover-title').textContent = '🎉 解放END達成！ 🎉';
         document.getElementById('gameover-msg').innerHTML = `
+            <div style="font-size:20px;color:#ffd700;margin-bottom:15px;">★★★ おめでとうございます！ ★★★</div>
             虚無の王が崩れ落ちる……<br><br>
             長い沈黙の後、闇が薄れていく。<br>
             どこか遠くで、光が見えた気がした。<br><br>
+            <div style="background:#1a1a2e;padding:10px;border-radius:5px;margin:10px 0;">
             レベル: ${this.player.level}<br>
             死亡回数: ${this.deathCount}<br>
             町の発展: ${this.town.getLevelInfo().name}
+            </div>
+            <div style="background:#2d1a1a;border:2px solid #ff6b6b;padding:12px;border-radius:8px;margin:15px 0;">
+                <div style="color:#ff6b6b;font-weight:bold;margin-bottom:8px;">📢 クリア報告をお願いします！</div>
+                <div style="color:#ccc;font-size:12px;margin-bottom:10px;">あなたは数少ないクリア者です。<br>ぜひ記録を残してください！（開発者が泣いて喜びます）</div>
+                <button onclick="game.shareToGitHub()" style="background:#238636;color:#fff;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;font-size:14px;font-weight:bold;">
+                    📝 クリア記録を残す（GitHub）
+                </button>
+            </div>
+            <div style="color:#888;font-size:11px;">クリア日時: ${clearDate}</div>
         `;
         document.getElementById('gameover-modal').classList.add('active');
+    }
+
+    incrementClearCount() {
+        const count = parseInt(localStorage.getItem('liberationClearCount') || '0') + 1;
+        localStorage.setItem('liberationClearCount', count.toString());
+        return count;
+    }
+
+    shareToGitHub() {
+        const title = encodeURIComponent('🎉 解放END達成！');
+        const body = encodeURIComponent(`## クリア記録
+
+- **レベル**: ${this.player.level}
+- **死亡回数**: ${this.deathCount}
+- **町の発展**: ${this.town.getLevelInfo().name}
+- **日時**: ${new Date().toLocaleString('ja-JP')}
+
+---
+*DUNG: Azure Flame Web版で虚無の回廊をクリアしました！*`);
+
+        // GitHubリポジトリのIssue作成URL
+        const url = `https://github.com/yurukusa/dung-azure-flame-web/issues/new?title=${title}&body=${body}&labels=clear-record`;
+        window.open(url, '_blank');
     }
 
     checkLevelUp() {
@@ -2323,8 +2425,9 @@ class Game {
         document.getElementById('town-screen').style.display = 'block';
         renderTown();
 
-        // 自動探索を停止
+        // 自動探索の死亡カウント＆停止
         if (typeof stopAutoExplore === 'function' && autoExploreInterval) {
+            autoExploreStats.deaths++;
             stopAutoExplore();
         }
     }
@@ -2862,19 +2965,10 @@ function generateEquipment(floor, dungeonId = 0, magicFind = 0) {
     }
     if (rarity === 'SET') rarity = 'LEGEND';
 
-    // Unique
+    // Unique - 新しいドロップ条件対応の関数を使用
     if (rarity === 'UNIQUE') {
-        const available = UNIQUES.filter(u => floor >= UNIQUE_TIER_FLOORS[u.tier]);
-        if (available.length > 0) {
-            const weights = available.map(u => 1 / Math.pow(2, u.tier));
-            const u = weightedRandom(available, weights);
-            const stats = {...u.stats};
-            if (u.neg) for (const k in u.neg) stats[k] = (stats[k]||0) + u.neg[k];
-            const eq = new Equipment(u.name, u.name, u.type, 'UNIQUE', 'COMMON', stats, u.reqStr||0, u.reqDex||0, u.reqInt||0, '', u.effects||{}, u.desc||'');
-            eq.effectiveFloor = floor + (dungeonId === 1 ? 15 : dungeonId === 2 ? 50 : 0);
-            addAffixes(eq, 3, 3, floor, dungeonId);
-            return eq;
-        }
+        const unique = generateUnique(floor, dungeonId, false, null);
+        if (unique) return unique;
         rarity = 'RARE';
     }
 
@@ -2925,6 +3019,83 @@ function generateEquipment(floor, dungeonId = 0, magicFind = 0) {
     addAffixesGuaranteed(eq, minAffixes, maxAffixes, floor, dungeonId);
     eq.effectiveFloor = floor + (dungeonId === 1 ? 15 : dungeonId === 2 ? 50 : 0);
     eq.name = eq.getFullName();
+    return eq;
+}
+
+// ドロップ条件をチェックする関数
+function checkDropCondition(conditions, floor, dungeonId, isBoss = false, enemyName = null) {
+    // conditions: 配列形式 ['frozen_70f', 'altar'] など
+    if (!conditions || !Array.isArray(conditions)) return false;
+
+    // 'none' は常にドロップ可能
+    if (conditions.includes('none')) return true;
+
+    const dungeonNames = {0: 'abyss', 1: 'inferno', 2: 'frozen', 3: 'void'};
+    const currentDungeon = dungeonNames[dungeonId] || 'abyss';
+
+    for (const cond of conditions) {
+        // ボス条件
+        if (cond.endsWith('_boss')) {
+            const reqDungeon = cond.replace('_boss', '');
+            if (reqDungeon === currentDungeon && isBoss) return true;
+            continue;
+        }
+
+        // 階層条件（例: frozen_70f）
+        const floorMatch = cond.match(/^(\w+)_(\d+)f$/);
+        if (floorMatch) {
+            const reqDungeon = floorMatch[1];
+            const reqFloor = parseInt(floorMatch[2]);
+            if (reqDungeon === currentDungeon && floor >= reqFloor) return true;
+            continue;
+        }
+
+        // 祭壇条件
+        if (cond === 'altar') {
+            // TODO: 祭壇モード実装時に対応
+            continue;
+        }
+
+        // 壁モンスター条件（enemyNameが指定されている場合）
+        if (enemyName && WALL_MONSTER_CONDITIONS[enemyName]) {
+            const monsterCond = WALL_MONSTER_CONDITIONS[enemyName];
+            if (cond === monsterCond) return true;
+        }
+    }
+
+    return false;
+}
+
+// ユニーク装備を生成（条件付きドロップ対応）
+function generateUnique(floor, dungeonId = 0, isBoss = false, enemyName = null) {
+    // 条件を満たすユニークのみをフィルタ
+    const available = UNIQUES.filter(u => {
+        // Tier条件チェック
+        if (floor < UNIQUE_TIER_FLOORS[u.tier]) return false;
+
+        // ドロップ条件チェック
+        const conditions = u.dropCondition || ['none'];
+        return checkDropCondition(conditions, floor, dungeonId, isBoss, enemyName);
+    });
+
+    if (available.length === 0) return null;
+
+    // Tierによる重み付け（低Tierほど出やすい）
+    const weights = available.map(u => 1 / Math.pow(2, u.tier));
+    const u = weightedRandom(available, weights);
+
+    const stats = {...u.stats};
+    if (u.neg) {
+        for (const k in u.neg) stats[k] = (stats[k] || 0) + u.neg[k];
+    }
+
+    const eq = new Equipment(u.name, u.name, u.type, 'UNIQUE', 'COMMON', stats,
+        u.reqStr || 0, u.reqDex || 0, u.reqInt || 0, '', u.effects || {}, u.desc || '');
+    eq.effectiveFloor = floor + (dungeonId === 1 ? 15 : dungeonId === 2 ? 50 : 0);
+
+    // ユニークにもアフィックス追加（3つ）
+    addAffixes(eq, 1, 2, floor, dungeonId);
+
     return eq;
 }
 
@@ -3023,7 +3194,7 @@ function addAffixesLegend(eq, minTotal, maxTotal, floor, dungeonId = 0) {
     }
 }
 
-function generateBossDrop(floor, dungeonId = 0) {
+function generateBossDrop(floor, dungeonId = 0, enemyName = null) {
     // ボスドロップ: 6modレア(50%), Unique(25%), Legend(15%), Set(10%)
     const roll = Math.random();
     if (roll < 0.10) {
@@ -3036,8 +3207,8 @@ function generateBossDrop(floor, dungeonId = 0) {
         // Legend装備 (15%)
         return generateLegend(floor, dungeonId);
     } else if (roll < 0.50) {
-        // Unique装備 (25%)
-        const unique = generateUnique(floor, dungeonId);
+        // Unique装備 (25%) - ボスなのでisBoss=true
+        const unique = generateUnique(floor, dungeonId, true, enemyName);
         if (unique) return unique;
         // Unique生成失敗時は6modレアに
         return generate6ModRare(floor, dungeonId);
@@ -4613,6 +4784,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!game.inTown) {
             const keys = {w:[0,-1],a:[-1,0],s:[0,1],d:[1,0],ArrowUp:[0,-1],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowRight:[1,0]};
             if (keys[e.key]) {
+                // Auto-explore running - switch to manual mode on movement
+                if (autoExploreInterval && !autoManualOverride) {
+                    autoManualOverride = true;
+                    document.getElementById('auto-status').textContent = '手動モード (Rで再開)';
+                    game.msg('手動モード [R]で自動再開 [Q]で終了', 'c-rare');
+                }
                 game.move(keys[e.key][0], keys[e.key][1]);
                 render();
                 e.preventDefault();
@@ -4626,6 +4803,15 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (e.key === 'c') {
                 renderStatus();
                 document.getElementById('status-modal').classList.add('active');
+            } else if (e.key === 'r' && autoExploreInterval && autoManualOverride) {
+                // Resume auto mode
+                autoManualOverride = false;
+                document.getElementById('auto-status').textContent = '探索中...';
+                game.msg('自動モード再開', 'c-cyan');
+            } else if (e.key === 'q' && autoExploreInterval) {
+                // Stop auto explore
+                stopAutoExplore();
+                game.msg('自動探索を終了しました', 'c-cyan');
             }
         }
     });
@@ -4941,6 +5127,53 @@ function autoEquip() {
     }
     game.save();
     renderTown();
+}
+
+function autoEquipInventoryOnly() {
+    const p = game.player;
+    let equipped = 0;
+
+    for (const slot of EQUIP_SLOTS) {
+        let bestEq = null;
+        let bestScore = -9999;
+        let bestIdx = -1;
+
+        const current = p.equipment[slot];
+        if (current) {
+            bestScore = current.calcScore();
+            bestEq = current;
+        }
+
+        for (let i = 0; i < p.inventory.length; i++) {
+            const item = p.inventory[i];
+            if (item.type !== 'equip') continue;
+            const eq = item.equip;
+            const type = EQUIP_TYPES[eq.type];
+            if (!type.slots.includes(slot)) continue;
+            if (!p.canEquip(eq)) continue;
+            if (type.twoHand && slot === 'offHand') continue;
+
+            const score = eq.calcScore();
+            if (score > bestScore) {
+                bestScore = score;
+                bestEq = eq;
+                bestIdx = i;
+            }
+        }
+
+        if (bestIdx >= 0 && bestEq !== current) {
+            if (current) {
+                p.inventory.push({ type: 'equip', equip: current });
+            }
+            p.equipment[slot] = bestEq;
+            p.inventory.splice(bestIdx, 1);
+            equipped++;
+        }
+    }
+
+    if (equipped > 0) {
+        game.msg(`自動装備（${equipped}箇所）`, 'c-green');
+    }
 }
 
 // ==================== STASH FUNCTIONS ====================
@@ -5621,11 +5854,12 @@ function forgeAction(action, cost) {
 
 // ==================== AUTO EXPLORE ====================
 let autoExploreInterval = null;
-let autoExploreStats = { enemies: 0, items: 0, souls: 0, floors: 0 };
-let autoSettings = { dungeonId: 0, maxFloor: 15, pickupRarity: 0, stashRarity: 2, hpThreshold: 30 };
+let autoExploreStats = { enemies: 0, items: 0, souls: 0, floors: 0, deaths: 0 };
+let autoSettings = { dungeonId: 0, maxFloor: 15, pickupRarity: 0, stashRarity: 2, hpThreshold: 30, maxPotions: 5, lowScoreFirst: true, autoEquipEnabled: true };
+let autoManualOverride = false;  // Manual intervention flag
 
 function showAutoExplore() {
-    autoExploreStats = { enemies: 0, items: 0, souls: 0, floors: 0 };
+    autoExploreStats = { enemies: 0, items: 0, souls: 0, floors: 0, deaths: 0 };
 
     // Initialize dungeon dropdown
     const dungeonSelect = document.getElementById('auto-dungeon');
@@ -5647,6 +5881,9 @@ function showAutoExplore() {
     document.getElementById('auto-pickup-rarity').value = autoSettings.pickupRarity;
     document.getElementById('auto-stash-rarity').value = autoSettings.stashRarity;
     document.getElementById('auto-hp-threshold').value = autoSettings.hpThreshold;
+    document.getElementById('auto-max-potions').value = autoSettings.maxPotions;
+    document.getElementById('auto-low-score').value = autoSettings.lowScoreFirst ? '1' : '0';
+    document.getElementById('auto-equip-enabled').value = autoSettings.autoEquipEnabled ? '1' : '0';
 
     // Event listeners
     dungeonSelect.onchange = () => {
@@ -5691,6 +5928,7 @@ function updateAutoExploreUI() {
         <div>アイテム: <span class="c-rare">${autoExploreStats.items}</span></div>
         <div>魂: <span class="c-flame">+${autoExploreStats.souls}</span></div>
         <div>階層: <span class="c-cyan">${autoExploreStats.floors}</span></div>
+        <div>死亡: <span class="c-red">${autoExploreStats.deaths}</span></div>
     `;
 }
 
@@ -5701,6 +5939,9 @@ function startAutoExplore() {
     autoSettings.pickupRarity = parseInt(document.getElementById('auto-pickup-rarity').value);
     autoSettings.stashRarity = parseInt(document.getElementById('auto-stash-rarity').value);
     autoSettings.hpThreshold = parseInt(document.getElementById('auto-hp-threshold').value);
+    autoSettings.maxPotions = parseInt(document.getElementById('auto-max-potions').value);
+    autoSettings.lowScoreFirst = document.getElementById('auto-low-score').value === '1';
+    autoSettings.autoEquipEnabled = document.getElementById('auto-equip-enabled').value === '1';
 
     // Enter dungeon if in town
     if (game.inTown) {
@@ -5721,7 +5962,9 @@ function startAutoExplore() {
         }
         if (game.inTown) {
             // Process inventory in town then re-enter
-            autoProcessTownInventory();
+            if (!autoProcessTownInventory()) {
+                return; // Stash full, exploration stopped
+            }
             game.enterDungeon(autoSettings.dungeonId);
             document.getElementById('town-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
@@ -5737,16 +5980,54 @@ function autoProcessTownInventory() {
     const rarityOrder = ['NORMAL', 'MAGIC', 'RARE', 'UNIQUE', 'LEGEND', 'SET'];
 
     // Move items to stash if rarity >= stashRarity
+    let stashedCount = 0;
     for (let i = p.inventory.length - 1; i >= 0; i--) {
         const item = p.inventory[i];
-        if (item.type === 'equip' && game.town.stash.length < 100) {
-            const rarityIdx = rarityOrder.indexOf(item.equip.rarity);
-            if (rarityIdx >= 0 && rarityIdx >= autoSettings.stashRarity) {
+        if (item.type !== 'equip') continue;
+
+        // Skip equipped items
+        const isEquipped = Object.values(p.equipment).some(e => e === item.equip);
+        if (isEquipped) continue;
+
+        const rarityIdx = rarityOrder.indexOf(item.equip.rarity);
+        if (rarityIdx >= 0 && rarityIdx >= autoSettings.stashRarity) {
+            if (game.town.stash.length < 100) {
                 game.town.stash.push(item);
                 p.inventory.splice(i, 1);
+                stashedCount++;
+            } else {
+                // Stash is full - stop auto explore
+                game.msg('倉庫が満杯です。自動探索を停止します。', 'c-red');
+                stopAutoExplore();
+                return false;
             }
         }
     }
+
+    if (stashedCount > 0) {
+        autoExploreStats.items += stashedCount;
+    }
+
+    // Handle potion limit
+    const maxPotions = autoSettings.maxPotions;
+    const potionCount = p.inventory.filter(i => i.type === 'potion').length;
+    if (potionCount > maxPotions) {
+        // Store excess potions in stash, or discard if stash full
+        for (let i = p.inventory.length - 1; i >= 0 && p.inventory.filter(i => i.type === 'potion').length > maxPotions; i--) {
+            const item = p.inventory[i];
+            if (item.type === 'potion') {
+                if (game.town.stash.length < 100) {
+                    game.town.stash.push(item);
+                    p.inventory.splice(i, 1);
+                } else {
+                    // Stash full - just discard excess potions
+                    p.inventory.splice(i, 1);
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 function stopAutoExplore() {
@@ -5754,6 +6035,7 @@ function stopAutoExplore() {
         clearInterval(autoExploreInterval);
         autoExploreInterval = null;
     }
+    autoManualOverride = false;
     document.getElementById('btn-start-auto').style.display = 'block';
     document.getElementById('btn-stop-auto').style.display = 'none';
     document.getElementById('close-auto').style.display = 'block';
@@ -5763,6 +6045,7 @@ function stopAutoExplore() {
 
 function autoExploreStep() {
     if (!game || !game.dungeon || game.inTown) return;
+    if (autoManualOverride) return;  // Skip when in manual mode
 
     const p = game.player;
     const d = game.dungeon;
@@ -5873,7 +6156,35 @@ function autoExploreStep() {
             targetY = d.stairsY;
         }
     } else if (nearestItem) {
-        // Still items, but inventory full - try to soul convert
+        // Still items, but inventory full - try to soul convert lowest score item
+        if (game.town.hasFeature('soulConvert')) {
+            // Find convertible items (below pickup rarity, not equipped)
+            const convertible = [];
+            for (let i = 0; i < p.inventory.length; i++) {
+                const item = p.inventory[i];
+                if (item.type === 'equip') {
+                    const rarityIdx = rarityOrder.indexOf(item.equip.rarity);
+                    const isEquipped = Object.values(p.equipment).some(eq => eq && eq === item.equip);
+                    if (!isEquipped && rarityIdx >= 0 && rarityIdx < autoSettings.pickupRarity) {
+                        convertible.push({ idx: i, item: item, score: item.equip.calcScore() });
+                    }
+                }
+            }
+            if (convertible.length > 0) {
+                // Sort by score (low to high if lowScoreFirst, otherwise high to low)
+                if (autoSettings.lowScoreFirst) {
+                    convertible.sort((a, b) => a.score - b.score);
+                } else {
+                    convertible.sort((a, b) => b.score - a.score);
+                }
+                // Convert the first one
+                const toConvert = convertible[0];
+                const souls = Math.max(1, Math.floor(toConvert.score / 5));
+                p.souls += souls;
+                p.inventory.splice(toConvert.idx, 1);
+                autoExploreStats.souls += souls;
+            }
+        }
         targetX = nearestItem.x;
         targetY = nearestItem.y;
     } else {
@@ -5906,6 +6217,11 @@ function autoExploreStep() {
         game.move(0, dy);
     } else if (dx !== 0 && d.walkable(p.x + dx, p.y)) {
         game.move(dx, 0);
+    }
+
+    // After picking up equipment, auto-equip if enabled
+    if (p.inventory.length > oldItems && autoSettings.autoEquipEnabled && game.town.hasFeature('autoEquip')) {
+        autoEquipInventoryOnly();
     }
 
     // After picking up equipment, apply pickup rarity (convert low rarity to souls)
