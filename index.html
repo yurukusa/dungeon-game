@@ -441,6 +441,244 @@
             cursor: not-allowed;
             border-color: #444;
         }
+
+        /* ===== Buttons ===== */
+        .close-btn {
+            margin-top: 15px;
+            width: 100%;
+            padding: 10px;
+            background: #e74c3c;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .use-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            background: #27ae60;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .equip-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            background: #3498db;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .drop-btn {
+            margin-top: 5px;
+            width: 100%;
+            padding: 8px;
+            background: #c0392b;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .forge-btn {
+            background: #8e44ad;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            text-align: center;
+            min-width: 70px;
+        }
+        .forge-btn:hover { background: #9b59b6; }
+        .forge-btn:disabled { background: #444; color: #666; cursor: not-allowed; }
+
+        /* ===== Equipment Display ===== */
+        .equip-detail {
+            background: #2a2a4e;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .equip-slot {
+            padding: 5px;
+            margin: 3px 0;
+            background: #1a1a2e;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .equip-slot:hover { background: #2a2a3e; }
+        .negative { color: #e74c3c; }
+
+        /* ===== Status Screen ===== */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        .stat-label { color: #888; }
+        .stat-value { font-weight: bold; }
+
+        /* ===== Town Screen ===== */
+        #town-screen {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .town-title {
+            font-size: 24px;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+        .npc-dialogue {
+            background: #0f0f23;
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+            white-space: pre-line;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .town-menu {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .town-btn {
+            padding: 12px 16px;
+            background: #2d4a6a;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .town-btn:hover { background: #4a6a8a; }
+        .town-btn:disabled { background: #333; color: #666; display: none; }
+        .town-btn.primary-btn {
+            background: linear-gradient(135deg, #2d6a4f, #1a5a3f);
+            font-size: 16px;
+            padding: 15px 25px;
+            border: 2px solid #3da871;
+        }
+        .town-btn.primary-btn:hover { background: linear-gradient(135deg, #3d8a6f, #2d6a4f); }
+        .town-btn.sub-btn { background: #444; font-size: 12px; padding: 8px 15px; }
+        .town-btn.sub-btn:hover { background: #555; }
+        .town-btn.feature-btn { font-size: 13px; }
+        .soul-bar {
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        /* ===== Dungeon Selection ===== */
+        .dungeon-list { list-style: none; }
+        .dungeon-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: #2a2a4e;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .dungeon-item:hover { background: #3a3a5e; }
+        .dungeon-item.locked { opacity: 0.5; cursor: not-allowed; }
+
+        /* ===== Shop/Stash Tabs ===== */
+        .stash-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .stash-tab {
+            flex: 1;
+            padding: 8px;
+            background: #333;
+            border: none;
+            border-radius: 4px;
+            color: #888;
+            cursor: pointer;
+        }
+        .stash-tab.active {
+            background: #2d4a6a;
+            color: #fff;
+        }
+        .shop-gold {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .shop-price { float: right; }
+
+        /* ===== Stat Allocation ===== */
+        .stat-points-info {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .stat-alloc-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #2a2a4e;
+            border-radius: 4px;
+        }
+        .alloc-btn {
+            padding: 8px 16px;
+            background: #27ae60;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .alloc-btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        /* ===== Misc ===== */
+        .return-items {
+            font-size: 11px;
+            color: #3498db;
+        }
+
+        /* ===== Responsive Design ===== */
+        @media (max-width: 600px) {
+            #map { font-size: 18px; letter-spacing: 1px; }
+            #side-panel { width: 100%; }
+            .ctrl-btn { width: 60px; height: 60px; }
+        }
+        @media (max-width: 500px) {
+            .inv-container { flex-direction: column; }
+            .inv-list-panel { max-width: none; border-right: none; border-bottom: 1px solid #4a4a6a; padding-bottom: 10px; max-height: 40vh; }
+            .inv-detail-panel { flex: 1; }
+        }
+        @media (orientation: portrait) and (max-height: 600px) {
+            .inv-modal-content::before {
+                content: "横向き推奨";
+                display: block;
+                text-align: center;
+                color: #f1c40f;
+                font-size: 12px;
+                margin-bottom: 5px;
+            }
+        }
     </style>
 </head>
 <body>
